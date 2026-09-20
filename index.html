@@ -7,60 +7,48 @@
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <style>
     * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+      margin: 0; padding: 0; box-sizing: border-box;
       -webkit-tap-highlight-color: transparent;
       user-select: none;
     }
-
     html, body {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
+      width: 100%; height: 100%; overflow: hidden;
       background: #000;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       color: #fff;
     }
-
     #app {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      background: #000;
-      transition: background-color 0.25s ease;
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      position: relative; background: #000;
+      transition: background-color 0.3s ease;
     }
 
-    /* Vùng đen 16:9 – luôn chừa chỗ 2 bên cho controls */
+    /* Stage luôn chừa chỗ 2 bên controls */
     #stage {
       position: relative;
-      width: min(calc(100vw - 140px), calc(100vh * 16 / 9));
-      height: min(calc((100vw - 140px) * 9 / 16), calc(100vh - 20px));
+      width: min(calc(100vw - 150px), calc(92vh * 16 / 9));
+      height: min(calc((100vw - 150px) * 9 / 16), 92vh);
       background: #000;
-      border-radius: 6px;
+      border-radius: 12px;
       overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background-color 0.25s ease;
+      display: flex; align-items: center; justify-content: center;
+      transition: background-color 0.3s ease;
     }
 
     #camera-frame {
       position: relative;
-      background: #111;
+      background: #0a0a0a;
       overflow: hidden;
+      border-radius: 10px;
       width: 100%;
       height: 100%;
-      transition: width 0.2s ease, height 0.2s ease;
+      transition: width 0.25s ease, height 0.25s ease;
     }
 
     #video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
+      width: 100%; height: 100%;
+      object-fit: contain; /* KHÔNG CẮT */
       display: block;
       background: #000;
       transform-origin: center center;
@@ -69,405 +57,217 @@
     #canvas { display: none; }
 
     #no-camera {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: #c8c8c8;
-      z-index: 10;
-      text-align: center;
-      padding: 24px;
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: #c8c8c8; z-index: 10; text-align: center; padding: 24px;
     }
     #no-camera.hidden { display: none; }
-
-    #no-camera .icon-wrap {
-      width: 72px;
-      height: 72px;
-      margin-bottom: 16px;
-      opacity: 0.55;
-    }
-    #no-camera h2 {
-      font-size: 20px;
-      font-weight: 600;
-      color: #111;
-      margin-bottom: 8px;
-    }
-    #no-camera p {
-      font-size: 14px;
-      color: #555;
-      max-width: 280px;
-      line-height: 1.4;
-    }
+    #no-camera .icon-wrap { width: 72px; height: 72px; margin-bottom: 16px; opacity: 0.55; }
+    #no-camera h2 { font-size: 20px; font-weight: 600; color: #111; margin-bottom: 8px; }
+    #no-camera p { font-size: 14px; color: #555; max-width: 280px; line-height: 1.4; }
 
     #countdown {
-      position: absolute;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0,0,0,0.45);
-      z-index: 50;
-      font-size: clamp(90px, 18vw, 140px);
-      font-weight: 200;
-      color: #fff;
+      position: absolute; inset: 0;
+      display: none; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.45); z-index: 50;
+      font-size: clamp(90px, 18vw, 140px); font-weight: 200; color: #fff;
       text-shadow: 0 4px 30px rgba(0,0,0,0.5);
     }
     #countdown.show { display: flex; }
 
     #rec-timer {
-      position: absolute;
-      top: 12px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 16px;
-      font-weight: 500;
-      color: #fff;
-      background: rgba(0,0,0,0.55);
-      padding: 5px 14px;
-      border-radius: 20px;
-      z-index: 20;
-      display: none;
-      font-variant-numeric: tabular-nums;
+      position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+      font-size: 16px; font-weight: 500; color: #fff;
+      background: rgba(0,0,0,0.55); padding: 5px 14px; border-radius: 20px;
+      z-index: 20; display: none; font-variant-numeric: tabular-nums;
     }
     #rec-timer.recording { color: #ff3b30; }
 
     #qr-hint {
-      position: absolute;
-      top: 12px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0,0,0,0.6);
-      color: #fff;
-      padding: 7px 16px;
-      border-radius: 20px;
-      font-size: 13px;
-      z-index: 15;
-      display: none;
-      white-space: nowrap;
+      position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.6); color: #fff; padding: 7px 16px;
+      border-radius: 20px; font-size: 13px; z-index: 15; display: none; white-space: nowrap;
     }
 
     #shutter-flash {
-      position: absolute;
-      inset: 0;
-      background: #000;
-      opacity: 0;
-      pointer-events: none;
-      z-index: 40;
-      transition: opacity 0.05s ease;
+      position: absolute; inset: 0; background: #000; opacity: 0;
+      pointer-events: none; z-index: 40; transition: opacity 0.05s ease;
     }
 
     #fullscreen-flash {
-      position: fixed;
-      inset: 0;
-      background: #ffffff;
-      opacity: 0;
-      pointer-events: none;
-      z-index: 200;
-      transition: opacity 0.35s ease;
+      position: fixed; inset: 0; background: #ffffff; opacity: 0;
+      pointer-events: none; z-index: 200; transition: opacity 0.4s ease;
     }
 
     /* ===== Left Controls ===== */
     .left-controls {
-      position: absolute;
-      left: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      z-index: 30;
-      gap: 10px;
+      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+      display: flex; flex-direction: column; align-items: center; z-index: 30; gap: 10px;
     }
 
     .flash-group {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      background: rgba(40,40,42,0.92);
-      border-radius: 26px;
-      padding: 5px;
-      gap: 2px;
+      display: flex; flex-direction: column; align-items: center;
+      background: rgba(40,40,42,0.92); border-radius: 26px; padding: 5px; gap: 2px;
       position: relative;
     }
 
     .ctrl-btn {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      border: none;
-      background: transparent;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: transform 0.12s ease, background 0.15s;
+      width: 40px; height: 40px; border-radius: 50%; border: none;
+      background: transparent; color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: transform 0.12s, background 0.15s;
       position: relative;
     }
     .ctrl-btn:active { transform: scale(0.9); }
-    .ctrl-btn.active {
-      background: #fff;
-      color: #000;
-    }
+    .ctrl-btn.active { background: #fff; color: #000; }
     .ctrl-btn svg { width: 19px; height: 19px; }
 
     #color-btn .dot {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: #ffffff;
-      border: 1.5px solid rgba(255,255,255,0.4);
-      box-shadow: 0 0 0 1px rgba(0,0,0,0.15);
+      width: 20px; height: 20px; border-radius: 50%; background: #ffffff;
+      border: 1.5px solid rgba(255,255,255,0.4); box-shadow: 0 0 0 1px rgba(0,0,0,0.15);
     }
 
-    /* Aspect ratio button */
     #aspect-btn {
-      background: rgba(40,40,42,0.92);
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: -0.3px;
-      width: 44px;
-      height: 36px;
-      border-radius: 18px;
+      background: rgba(40,40,42,0.92); font-size: 11px; font-weight: 600;
+      width: 44px; height: 34px; border-radius: 17px; letter-spacing: -0.3px;
     }
 
-    /* Color palette */
     #color-palette {
-      display: none;
-      position: absolute;
-      left: 52px;
-      top: 0;
-      background: rgba(40,40,42,0.96);
-      border-radius: 14px;
-      padding: 10px;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 8px;
-      z-index: 50;
+      display: none; position: absolute; left: 52px; top: 0;
+      background: rgba(40,40,42,0.96); border-radius: 14px; padding: 10px;
+      grid-template-columns: repeat(2, 1fr); gap: 8px; z-index: 50;
       box-shadow: 0 8px 28px rgba(0,0,0,0.5);
     }
     #color-palette.show { display: grid; }
 
     .color-swatch {
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      border: 2px solid transparent;
-      cursor: pointer;
-      transition: transform 0.12s, border-color 0.12s;
+      width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent;
+      cursor: pointer; transition: transform 0.12s, border-color 0.12s;
     }
-    .color-swatch:hover,
-    .color-swatch.selected {
-      border-color: #fff;
-      transform: scale(1.1);
-    }
+    .color-swatch:hover, .color-swatch.selected { border-color: #fff; transform: scale(1.1); }
 
-    /* Timer menu - ẨN MẶC ĐỊNH */
     #timer-menu {
-      display: none;
-      position: absolute;
-      left: 52px;
-      top: 50%;
-      transform: translateY(-50%);
-      background: rgba(40,40,42,0.96);
-      border-radius: 12px;
-      padding: 5px;
-      flex-direction: column;
-      gap: 2px;
-      z-index: 50;
-      min-width: 72px;
-      box-shadow: 0 8px 28px rgba(0,0,0,0.5);
+      display: none; position: fixed; background: rgba(40,40,42,0.96);
+      border-radius: 12px; padding: 5px; flex-direction: column; gap: 2px;
+      z-index: 50; min-width: 72px; box-shadow: 0 8px 28px rgba(0,0,0,0.5);
     }
-    #timer-menu.show {
-      display: flex;
-    }
+    #timer-menu.show { display: flex; }
 
     .timer-opt {
-      padding: 8px 12px;
-      border: none;
-      background: transparent;
-      color: #fff;
-      font-size: 14px;
-      border-radius: 7px;
-      cursor: pointer;
-      text-align: center;
-      white-space: nowrap;
+      padding: 8px 12px; border: none; background: transparent; color: #fff;
+      font-size: 14px; border-radius: 7px; cursor: pointer; text-align: center; white-space: nowrap;
     }
-    .timer-opt:hover,
-    .timer-opt.active {
-      background: rgba(255,255,255,0.14);
-    }
+    .timer-opt:hover, .timer-opt.active { background: rgba(255,255,255,0.14); }
 
     #toast {
-      position: fixed;
-      top: 18px;
-      left: 50%;
-      transform: translateX(-50%) translateY(-12px);
-      background: rgba(40,40,42,0.95);
-      color: #fff;
-      padding: 10px 16px;
-      border-radius: 11px;
-      font-size: 14px;
-      z-index: 300;
-      opacity: 0;
-      transition: all 0.25s ease;
-      pointer-events: none;
-      max-width: 88%;
-      text-align: center;
+      position: fixed; top: 18px; left: 50%; transform: translateX(-50%) translateY(-12px);
+      background: rgba(40,40,42,0.95); color: #fff; padding: 10px 16px;
+      border-radius: 11px; font-size: 14px; z-index: 300; opacity: 0;
+      transition: all 0.25s ease; pointer-events: none; max-width: 88%; text-align: center;
     }
-    #toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
     /* ===== Right Controls ===== */
     .right-controls {
-      position: absolute;
-      right: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-      z-index: 30;
+      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: 12px; z-index: 30;
     }
 
     .mode-switcher {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-      background: rgba(40,40,42,0.92);
-      border-radius: 24px;
-      padding: 5px;
+      display: flex; flex-direction: column; gap: 5px;
+      background: rgba(40,40,42,0.92); border-radius: 24px; padding: 5px;
     }
 
     .mode-btn {
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-      border: none;
-      background: transparent;
-      color: #aaa;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.15s ease;
+      width: 38px; height: 38px; border-radius: 50%; border: none;
+      background: transparent; color: #aaa;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.15s ease;
     }
-    .mode-btn.active {
-      background: #fff;
-      color: #000;
-    }
+    .mode-btn.active { background: #fff; color: #000; }
     .mode-btn svg { width: 18px; height: 18px; }
 
     #shutter {
-      width: 64px;
-      height: 64px;
-      border-radius: 50%;
-      border: 3.5px solid #fff;
-      background: #fff;
-      cursor: pointer;
-      position: relative;
-      transition: transform 0.1s ease, border-color 0.2s;
-      margin: 2px 0;
+      width: 64px; height: 64px; border-radius: 50%;
+      border: 3.5px solid #fff; background: #fff;
+      cursor: pointer; position: relative;
+      transition: transform 0.1s ease, border-color 0.2s; margin: 2px 0;
     }
     #shutter:active { transform: scale(0.9); }
-
     #shutter.video-mode { background: transparent; }
     #shutter.video-mode::after {
-      content: "";
-      position: absolute;
-      inset: 8px;
-      border-radius: 50%;
-      background: #ff3b30;
-      transition: all 0.2s ease;
+      content: ""; position: absolute; inset: 8px; border-radius: 50%;
+      background: #ff3b30; transition: all 0.2s ease;
     }
     #shutter.recording { border-color: #ff3b30; }
     #shutter.recording::after {
-      inset: 15px;
-      border-radius: 5px;
-      background: #ff3b30;
+      inset: 15px; border-radius: 5px; background: #ff3b30;
     }
 
     .flip-btn {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      border: none;
-      background: rgba(40,40,42,0.92);
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
+      width: 36px; height: 36px; border-radius: 50%; border: none;
+      background: rgba(40,40,42,0.92); color: #fff;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
     }
     .flip-btn svg { width: 16px; height: 16px; }
 
+    /* EV Slider (độ sáng) */
+    .ev-control {
+      position: absolute; right: 70px; top: 50%; transform: translateY(-50%);
+      display: none; flex-direction: column; align-items: center; gap: 8px;
+      z-index: 25; height: 160px;
+    }
+    .ev-control.show { display: flex; }
+    .ev-control .sun {
+      font-size: 16px; opacity: 0.9;
+    }
+    .ev-slider {
+      writing-mode: vertical-lr;
+      direction: rtl;
+      width: 6px; height: 120px;
+      -webkit-appearance: none; appearance: none;
+      background: rgba(255,255,255,0.25); border-radius: 3px; outline: none;
+    }
+    .ev-slider::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 18px; height: 18px;
+      border-radius: 50%; background: #fff; cursor: pointer;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+    }
+
     /* QR Popup */
     #qr-popup {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.7);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 250;
-      padding: 20px;
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      display: none; align-items: center; justify-content: center;
+      z-index: 250; padding: 20px;
     }
     #qr-popup.show { display: flex; }
-
     .qr-box {
-      background: #1c1c1e;
-      border-radius: 16px;
-      width: 100%;
-      max-width: 360px;
-      padding: 22px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      background: #1c1c1e; border-radius: 16px; width: 100%; max-width: 360px;
+      padding: 22px; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
     }
-    .qr-box h3 {
-      font-size: 17px;
-      font-weight: 600;
-      margin-bottom: 12px;
-    }
+    .qr-box h3 { font-size: 17px; font-weight: 600; margin-bottom: 12px; }
     .qr-box textarea {
-      width: 100%;
-      min-height: 110px;
-      background: #2c2c2e;
-      border: none;
-      border-radius: 10px;
-      color: #fff;
-      padding: 12px;
-      font-size: 14px;
-      resize: none;
-      outline: none;
-      margin-bottom: 14px;
-      font-family: inherit;
-      line-height: 1.45;
+      width: 100%; min-height: 110px; background: #2c2c2e; border: none;
+      border-radius: 10px; color: #fff; padding: 12px; font-size: 14px;
+      resize: none; outline: none; margin-bottom: 14px; font-family: inherit; line-height: 1.45;
     }
     .qr-actions { display: flex; gap: 10px; }
     .qr-actions button {
-      flex: 1;
-      padding: 12px;
-      border: none;
-      border-radius: 10px;
-      font-size: 15px;
-      font-weight: 500;
-      cursor: pointer;
+      flex: 1; padding: 12px; border: none; border-radius: 10px;
+      font-size: 15px; font-weight: 500; cursor: pointer;
     }
     .qr-actions .copy-btn { background: #0a84ff; color: #fff; }
     .qr-actions .close-btn { background: #3a3a3c; color: #fff; }
 
     @media (max-width: 600px) {
       #stage {
-        width: min(calc(100vw - 110px), calc(100vh * 16 / 9));
-        height: min(calc((100vw - 110px) * 9 / 16), calc(100vh - 16px));
+        width: min(calc(100vw - 120px), calc(90vh * 16 / 9));
+        height: min(calc((100vw - 120px) * 9 / 16), 90vh);
       }
-      .left-controls { left: 6px; gap: 8px; }
+      .left-controls { left: 6px; }
       .right-controls { right: 6px; }
       #shutter { width: 56px; height: 56px; }
-      #aspect-btn { width: 40px; height: 32px; font-size: 10px; }
+      .ev-control { right: 58px; }
     }
   </style>
 </head>
@@ -495,7 +295,7 @@
       </div>
     </div>
 
-    <!-- Left controls -->
+    <!-- Left -->
     <div class="left-controls">
       <div class="flash-group">
         <button class="ctrl-btn" id="color-btn" title="Chọn màu đèn">
@@ -520,11 +320,9 @@
 
       <button class="ctrl-btn" id="timer-btn" title="Hẹn giờ">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="9"/>
-          <path d="M12 7v5l3 3"/>
+          <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>
         </svg>
       </button>
-      <!-- Timer menu nằm ngoài button để tránh lỗi hiện sẵn -->
       <div id="timer-menu">
         <button class="timer-opt active" data-sec="0">Tắt</button>
         <button class="timer-opt" data-sec="3">3s</button>
@@ -533,11 +331,16 @@
         <button class="timer-opt" data-sec="15">15s</button>
       </div>
 
-      <!-- Nút chọn tỷ lệ 4:3 / 16:9 -->
-      <button class="ctrl-btn" id="aspect-btn" title="Tỷ lệ khung hình">4:3</button>
+      <button class="ctrl-btn" id="aspect-btn" title="Tỷ lệ khung hình">16:9</button>
     </div>
 
-    <!-- Right controls -->
+    <!-- EV Control -->
+    <div class="ev-control" id="ev-control">
+      <div class="sun">☀</div>
+      <input type="range" class="ev-slider" id="ev-slider" min="-2" max="2" step="0.1" value="0" orient="vertical">
+    </div>
+
+    <!-- Right -->
     <div class="right-controls">
       <div class="mode-switcher">
         <button class="mode-btn active" data-mode="photo" title="Chụp ảnh">
@@ -601,7 +404,8 @@
       timerSec: 0,
       isCounting: false,
       facingMode: 'user',
-      forceAspect: '4:3'   // '4:3' | '16:9' | 'auto'
+      forceAspect: '16:9', // mặc định 16:9
+      ev: 0
     };
 
     const app = document.getElementById('app');
@@ -622,6 +426,8 @@
     const timerBtn = document.getElementById('timer-btn');
     const timerMenu = document.getElementById('timer-menu');
     const aspectBtn = document.getElementById('aspect-btn');
+    const evControl = document.getElementById('ev-control');
+    const evSlider = document.getElementById('ev-slider');
     const qrPopup = document.getElementById('qr-popup');
     const qrResult = document.getElementById('qr-result');
     const toast = document.getElementById('toast');
@@ -640,15 +446,12 @@
         const ac = new (window.AudioContext || window.webkitAudioContext)();
         const osc = ac.createOscillator();
         const gain = ac.createGain();
-        osc.connect(gain);
-        gain.connect(ac.destination);
-        osc.frequency.value = freq;
-        osc.type = 'sine';
-        gain.gain.setValueAtTime(0.22, ac.currentTime);
+        osc.connect(gain); gain.connect(ac.destination);
+        osc.frequency.value = freq; osc.type = 'sine';
+        gain.gain.setValueAtTime(0.2, ac.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, ac.currentTime + duration);
-        osc.start(ac.currentTime);
-        osc.stop(ac.currentTime + duration);
-      } catch (e) {}
+        osc.start(ac.currentTime); osc.stop(ac.currentTime + duration);
+      } catch(e){}
     }
 
     function playShutterSound() {
@@ -673,54 +476,67 @@
     function downloadBlob(blob, filename) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 150);
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 150);
     }
 
-    /**
-     * Điều chỉnh khung hình theo mode người dùng chọn
-     * - '4:3'  → luôn hiển thị 4:3 (letterbox nếu cần)
-     * - '16:9' → luôn hiển thị 16:9 (có thể crop)
-     */
+    // Tỷ lệ khung: chỉ thay đổi kích thước container, video luôn contain (không cắt)
     function adjustAspectRatio() {
       const stageW = stage.clientWidth;
       const stageH = stage.clientHeight;
-
-      let targetRatio;
-      if (state.forceAspect === '4:3') {
-        targetRatio = 4 / 3;
-      } else {
-        targetRatio = 16 / 9;
-      }
-
-      let frameW, frameH;
+      const targetRatio = state.forceAspect === '4:3' ? 4/3 : 16/9;
       const stageRatio = stageW / stageH;
 
+      let frameW, frameH;
       if (targetRatio > stageRatio) {
-        // target rộng hơn stage → full width
         frameW = stageW;
         frameH = stageW / targetRatio;
       } else {
-        // target cao hơn → full height
         frameH = stageH;
         frameW = stageH * targetRatio;
       }
-
       cameraFrame.style.width = Math.round(frameW) + 'px';
       cameraFrame.style.height = Math.round(frameH) + 'px';
     }
 
+    // Áp dụng EV (độ sáng)
+    function applyEV(value) {
+      state.ev = value;
+      // Ưu tiên dùng constraint thật nếu camera hỗ trợ
+      try {
+        const track = state.stream?.getVideoTracks()?.[0];
+        if (track) {
+          const caps = track.getCapabilities?.() || {};
+          if (caps.exposureCompensation) {
+            track.applyConstraints({
+              advanced: [{ exposureCompensation: value }]
+            }).catch(()=>{});
+            return;
+          }
+          if (caps.brightness) {
+            // một số webcam dùng brightness 0-255 hoặc 0-1
+            const mid = (caps.brightness.max + caps.brightness.min) / 2;
+            const range = (caps.brightness.max - caps.brightness.min) / 2;
+            track.applyConstraints({
+              advanced: [{ brightness: mid + value * range * 0.5 }]
+            }).catch(()=>{});
+            return;
+          }
+        }
+      } catch(e){}
+
+      // Fallback: CSS filter
+      const brightness = 1 + (value * 0.35);
+      video.style.filter = `brightness(${brightness})`;
+    }
+
     async function startCamera(withAudio = false) {
       try {
+        // Nếu đã có stream và không cần audio → giữ nguyên
         if (state.stream && !withAudio) {
-          const hasVideo = state.stream.getVideoTracks().some(t => t.readyState === 'live');
-          if (hasVideo) {
+          const live = state.stream.getVideoTracks().some(t => t.readyState === 'live');
+          if (live) {
             noCamera.classList.add('hidden');
             return;
           }
@@ -745,28 +561,30 @@
         video.srcObject = state.stream;
         video.muted = true;
 
-        await new Promise((resolve) => {
-          if (video.readyState >= 2) resolve();
-          else video.onloadedmetadata = () => resolve();
+        await new Promise(r => {
+          if (video.readyState >= 2) r();
+          else video.onloadedmetadata = () => r();
         });
-
         await video.play();
         noCamera.classList.add('hidden');
 
+        // Hiện EV control
+        evControl.classList.add('show');
+        applyEV(state.ev);
+
         requestAnimationFrame(() => {
           adjustAspectRatio();
-          setTimeout(adjustAspectRatio, 120);
+          setTimeout(adjustAspectRatio, 150);
         });
       } catch (err) {
-        console.error('Camera error:', err);
+        console.error(err);
         noCamera.classList.remove('hidden');
         showToast('Không thể truy cập camera. Hãy kiểm tra quyền trình duyệt.');
       }
     }
 
     async function scanQRFromCanvas() {
-      const w = canvas.width;
-      const h = canvas.height;
+      const w = canvas.width, h = canvas.height;
 
       if ('BarcodeDetector' in window) {
         try {
@@ -774,24 +592,19 @@
           const bitmap = await createImageBitmap(canvas);
           const codes = await detector.detect(bitmap);
           bitmap.close();
-          if (codes && codes.length > 0 && codes[0].rawValue) {
-            return codes[0].rawValue;
-          }
-        } catch (e) {}
+          if (codes?.length && codes[0].rawValue) return codes[0].rawValue;
+        } catch(e){}
       }
 
-      const trySizes = [1, 0.7, 0.5];
-      for (const scale of trySizes) {
-        const tw = Math.max(200, Math.floor(w * scale));
-        const th = Math.max(200, Math.floor(h * scale));
+      for (const scale of [1, 0.7, 0.5, 0.35]) {
+        const tw = Math.max(180, Math.floor(w * scale));
+        const th = Math.max(180, Math.floor(h * scale));
         const tmp = document.createElement('canvas');
-        tmp.width = tw;
-        tmp.height = th;
-        const tctx = tmp.getContext('2d');
-        tctx.drawImage(canvas, 0, 0, tw, th);
-        const imageData = tctx.getImageData(0, 0, tw, th);
-        const code = jsQR(imageData.data, tw, th, { inversionAttempts: 'attemptBoth' });
-        if (code && code.data) return code.data;
+        tmp.width = tw; tmp.height = th;
+        tmp.getContext('2d').drawImage(canvas, 0, 0, tw, th);
+        const img = tmp.getContext('2d').getImageData(0, 0, tw, th);
+        const code = jsQR(img.data, tw, th, { inversionAttempts: 'attemptBoth' });
+        if (code?.data) return code.data;
       }
       return null;
     }
@@ -799,6 +612,7 @@
     async function capturePhoto() {
       if (!state.stream || state.isCounting || !video.videoWidth) return;
 
+      // Timer countdown
       if (state.timerSec > 0) {
         state.isCounting = true;
         countdownEl.classList.add('show');
@@ -813,31 +627,35 @@
 
       const w = video.videoWidth;
       const h = video.videoHeight;
-      canvas.width = w;
-      canvas.height = h;
+      canvas.width = w; canvas.height = h;
 
+      // ===== FLASH timing dài hơn vì camera PC chậm =====
       if (state.flashOn) {
         fullscreenFlash.style.background = state.flashColor;
         fullscreenFlash.style.opacity = '1';
-        await new Promise(r => requestAnimationFrame(() => setTimeout(r, 90)));
+        // chờ 1.5s để camera kịp phản ứng ánh sáng
+        await new Promise(r => setTimeout(r, 1500));
       }
 
+      // Vẽ frame
       ctx.save();
       if (state.flipH || state.flipV) {
-        ctx.translate(w / 2, h / 2);
+        ctx.translate(w/2, h/2);
         ctx.scale(state.flipH ? -1 : 1, state.flipV ? -1 : 1);
-        ctx.translate(-w / 2, -h / 2);
+        ctx.translate(-w/2, -h/2);
       }
       ctx.drawImage(video, 0, 0, w, h);
       ctx.restore();
 
       if (!state.flashOn) {
-        shutterFlash.style.opacity = '0.9';
+        shutterFlash.style.opacity = '0.85';
         playShutterSound();
-        setTimeout(() => { shutterFlash.style.opacity = '0'; }, 55);
+        setTimeout(() => shutterFlash.style.opacity = '0', 60);
       } else {
         playShutterSound();
-        setTimeout(() => { fullscreenFlash.style.opacity = '0'; }, 60);
+        // giữ flash thêm 2s sau khi chụp
+        await new Promise(r => setTimeout(r, 2000));
+        fullscreenFlash.style.opacity = '0';
       }
 
       if (state.mode === 'qr') {
@@ -847,7 +665,7 @@
           qrResult.value = result;
           qrPopup.classList.add('show');
         } else {
-          showToast('Không tìm thấy mã QR. Hãy đưa QR vào giữa khung hình, đủ sáng và rõ.');
+          showToast('Không tìm thấy mã QR. Đưa QR rõ, đủ sáng vào giữa khung rồi chụp lại.');
         }
         return;
       }
@@ -862,15 +680,10 @@
 
     function getSupportedMime() {
       const types = [
-        'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
-        'video/mp4',
-        'video/webm;codecs=vp9,opus',
-        'video/webm;codecs=vp8,opus',
-        'video/webm'
+        'video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4',
+        'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'
       ];
-      for (const t of types) {
-        if (MediaRecorder.isTypeSupported(t)) return t;
-      }
+      for (const t of types) if (MediaRecorder.isTypeSupported(t)) return t;
       return '';
     }
 
@@ -878,28 +691,17 @@
       if (!state.stream || state.isRecording) return;
       state.recordedChunks = [];
       const mime = getSupportedMime();
-      if (!mime) {
-        showToast('Trình duyệt không hỗ trợ quay video');
-        return;
-      }
+      if (!mime) { showToast('Trình duyệt không hỗ trợ quay video'); return; }
       try {
-        state.mediaRecorder = new MediaRecorder(state.stream, {
-          mimeType: mime,
-          videoBitsPerSecond: 2500000
-        });
-      } catch (e) {
-        showToast('Không thể bắt đầu quay video');
-        return;
-      }
+        state.mediaRecorder = new MediaRecorder(state.stream, { mimeType: mime, videoBitsPerSecond: 2500000 });
+      } catch(e) { showToast('Không thể bắt đầu quay video'); return; }
+
       const isMp4 = mime.includes('mp4');
-      state.mediaRecorder.ondataavailable = e => {
-        if (e.data && e.data.size > 0) state.recordedChunks.push(e.data);
-      };
+      state.mediaRecorder.ondataavailable = e => { if (e.data?.size) state.recordedChunks.push(e.data); };
       state.mediaRecorder.onstop = () => {
         const blob = new Blob(state.recordedChunks, { type: mime });
-        const ext = isMp4 ? 'mp4' : 'webm';
-        downloadBlob(blob, `video_${Date.now()}.${ext}`);
-        showToast('Đã lưu video (' + ext.toUpperCase() + ')');
+        downloadBlob(blob, `video_${Date.now()}.${isMp4 ? 'mp4' : 'webm'}`);
+        showToast('Đã lưu video');
         state.recordedChunks = [];
       };
       state.mediaRecorder.start(200);
@@ -922,33 +724,25 @@
 
     let recInterval = null, recSeconds = 0;
     function startRecTimer() {
-      recSeconds = 0;
-      recTimerEl.textContent = '00:00:00';
+      recSeconds = 0; recTimerEl.textContent = '00:00:00';
       recInterval = setInterval(() => {
         recSeconds++;
-        const h = String(Math.floor(recSeconds / 3600)).padStart(2, '0');
-        const m = String(Math.floor((recSeconds % 3600) / 60)).padStart(2, '0');
-        const s = String(recSeconds % 60).padStart(2, '0');
+        const h = String(Math.floor(recSeconds/3600)).padStart(2,'0');
+        const m = String(Math.floor((recSeconds%3600)/60)).padStart(2,'0');
+        const s = String(recSeconds%60).padStart(2,'0');
         recTimerEl.textContent = `${h}:${m}:${s}`;
       }, 1000);
     }
-    function stopRecTimer() {
-      clearInterval(recInterval);
-      recInterval = null;
-    }
+    function stopRecTimer() { clearInterval(recInterval); recInterval = null; }
 
     async function setMode(mode) {
-      if (state.isRecording) {
-        showToast('Hãy dừng quay video trước');
-        return;
-      }
+      if (state.isRecording) { showToast('Hãy dừng quay video trước'); return; }
       state.mode = mode;
-      document.querySelectorAll('.mode-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.mode === mode);
-      });
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+
       if (mode === 'video') {
         shutter.classList.add('video-mode');
-        const hasAudio = state.stream && state.stream.getAudioTracks().some(t => t.readyState === 'live');
+        const hasAudio = state.stream?.getAudioTracks().some(t => t.readyState === 'live');
         if (!hasAudio) await startCamera(true);
       } else {
         shutter.classList.remove('video-mode');
@@ -956,7 +750,7 @@
       qrHint.style.display = mode === 'qr' ? 'block' : 'none';
     }
 
-    // ===== Events =====
+    // Events
     document.querySelectorAll('.mode-btn').forEach(btn => {
       btn.addEventListener('click', () => setMode(btn.dataset.mode));
     });
@@ -964,9 +758,7 @@
     shutter.addEventListener('click', () => {
       if (state.mode === 'video') {
         state.isRecording ? stopRecording() : startRecording();
-      } else {
-        capturePhoto();
-      }
+      } else capturePhoto();
     });
 
     flashBtn.addEventListener('click', () => {
@@ -976,7 +768,7 @@
       if (state.flashOn) showToast('Hãy bật độ sáng tối đa để có hiệu quả tốt nhất');
     });
 
-    colorBtn.addEventListener('click', (e) => {
+    colorBtn.addEventListener('click', e => {
       e.stopPropagation();
       colorPalette.classList.toggle('show');
       timerMenu.classList.remove('show');
@@ -993,14 +785,12 @@
       });
     });
 
-    timerBtn.addEventListener('click', (e) => {
+    timerBtn.addEventListener('click', e => {
       e.stopPropagation();
-      // định vị menu ngay cạnh nút timer
       const rect = timerBtn.getBoundingClientRect();
       timerMenu.style.left = (rect.right + 8) + 'px';
-      timerMenu.style.top = (rect.top + rect.height / 2) + 'px';
+      timerMenu.style.top = (rect.top + rect.height/2) + 'px';
       timerMenu.style.transform = 'translateY(-50%)';
-      timerMenu.style.position = 'fixed';
       timerMenu.classList.toggle('show');
       colorPalette.classList.remove('show');
     });
@@ -1016,26 +806,23 @@
       });
     });
 
-    // Aspect ratio toggle
     aspectBtn.addEventListener('click', () => {
-      if (state.forceAspect === '4:3') {
-        state.forceAspect = '16:9';
-        aspectBtn.textContent = '16:9';
-      } else {
-        state.forceAspect = '4:3';
-        aspectBtn.textContent = '4:3';
-      }
+      state.forceAspect = state.forceAspect === '16:9' ? '4:3' : '16:9';
+      aspectBtn.textContent = state.forceAspect;
       adjustAspectRatio();
       showToast('Tỷ lệ: ' + state.forceAspect);
     });
 
+    // EV slider
+    evSlider.addEventListener('input', () => {
+      applyEV(parseFloat(evSlider.value));
+    });
+
     document.getElementById('flip-v').addEventListener('click', () => {
-      state.flipV = !state.flipV;
-      applyTransform();
+      state.flipV = !state.flipV; applyTransform();
     });
     document.getElementById('flip-h').addEventListener('click', () => {
-      state.flipH = !state.flipH;
-      applyTransform();
+      state.flipH = !state.flipH; applyTransform();
     });
 
     document.getElementById('qr-close').addEventListener('click', () => qrPopup.classList.remove('show'));
@@ -1044,19 +831,15 @@
         await navigator.clipboard.writeText(qrResult.value);
         showToast('Đã sao chép');
       } catch {
-        qrResult.select();
-        document.execCommand('copy');
-        showToast('Đã sao chép');
+        qrResult.select(); document.execCommand('copy'); showToast('Đã sao chép');
       }
     });
 
-    document.addEventListener('click', (e) => {
-      if (!colorPalette.contains(e.target) && e.target !== colorBtn && !colorBtn.contains(e.target)) {
+    document.addEventListener('click', e => {
+      if (!colorPalette.contains(e.target) && e.target !== colorBtn && !colorBtn.contains(e.target))
         colorPalette.classList.remove('show');
-      }
-      if (!timerMenu.contains(e.target) && e.target !== timerBtn && !timerBtn.contains(e.target)) {
+      if (!timerMenu.contains(e.target) && e.target !== timerBtn && !timerBtn.contains(e.target))
         timerMenu.classList.remove('show');
-      }
     });
 
     window.addEventListener('resize', () => adjustAspectRatio());
