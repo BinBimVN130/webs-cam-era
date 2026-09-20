@@ -34,13 +34,15 @@
       transition: background-color 0.25s ease;
     }
 
-    /* Container 16:9 tối đa */
+    /* Vùng chứa 16:9 đen – camera sẽ nằm trong đây theo tỷ lệ thật */
     #stage {
       position: relative;
-      width: min(96vw, calc(96vh * 16 / 9));
-      height: min(calc(96vw * 9 / 16), 96vh);
+      /* chừa chỗ cho 2 bên controls (~56px mỗi bên) */
+      width: min(calc(100vw - 120px), calc(100vh * 16 / 9));
+      height: min(calc((100vw - 120px) * 9 / 16), 100vh);
+      max-height: 100vh;
       background: #000;
-      border-radius: 8px;
+      border-radius: 6px;
       overflow: hidden;
       display: flex;
       align-items: center;
@@ -48,11 +50,11 @@
       transition: background-color 0.25s ease;
     }
 
-    /* Camera frame - JS sẽ chỉnh tỷ lệ */
     #camera-frame {
       position: relative;
       background: #111;
       overflow: hidden;
+      /* JS sẽ set width/height theo tỷ lệ thật của camera */
       width: 100%;
       height: 100%;
     }
@@ -60,14 +62,14 @@
     #video {
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain; /* quan trọng: không cắt, không méo */
       display: block;
+      background: #000;
       transform-origin: center center;
     }
 
     #canvas { display: none; }
 
-    /* No camera */
     #no-camera {
       position: absolute;
       inset: 0;
@@ -101,7 +103,6 @@
       line-height: 1.4;
     }
 
-    /* Countdown */
     #countdown {
       position: absolute;
       inset: 0;
@@ -117,10 +118,9 @@
     }
     #countdown.show { display: flex; }
 
-    /* Recording timer */
     #rec-timer {
       position: absolute;
-      top: 14px;
+      top: 12px;
       left: 50%;
       transform: translateX(-50%);
       font-size: 16px;
@@ -135,10 +135,9 @@
     }
     #rec-timer.recording { color: #ff3b30; }
 
-    /* QR hint */
     #qr-hint {
       position: absolute;
-      top: 14px;
+      top: 12px;
       left: 50%;
       transform: translateX(-50%);
       background: rgba(0,0,0,0.6);
@@ -151,7 +150,7 @@
       white-space: nowrap;
     }
 
-    /* Shutter flash - MÀU ĐEN khi không bật flash */
+    /* Nháy ĐEN khi không flash */
     #shutter-flash {
       position: absolute;
       inset: 0;
@@ -159,10 +158,9 @@
       opacity: 0;
       pointer-events: none;
       z-index: 40;
-      transition: opacity 0.06s ease;
+      transition: opacity 0.05s ease;
     }
 
-    /* Fullscreen flash (chỉ khi bật flash) */
     #fullscreen-flash {
       position: fixed;
       inset: 0;
@@ -176,24 +174,25 @@
     /* ===== Left Controls ===== */
     .left-controls {
       position: absolute;
-      left: 12px;
+      left: 10px;
       top: 50%;
       transform: translateY(-50%);
       display: flex;
       flex-direction: column;
       align-items: center;
       z-index: 30;
+      gap: 0;
     }
 
     .flash-group {
       display: flex;
       flex-direction: column;
       align-items: center;
-      background: rgba(28,28,30,0.82);
-      backdrop-filter: blur(14px);
+      background: rgba(40,40,42,0.9);
       border-radius: 26px;
       padding: 5px;
       gap: 2px;
+      position: relative;
     }
 
     .ctrl-btn {
@@ -207,7 +206,7 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: all 0.15s ease;
+      transition: transform 0.12s ease, background 0.15s;
     }
     .ctrl-btn:active { transform: scale(0.9); }
     .ctrl-btn.active {
@@ -227,33 +226,34 @@
 
     #timer-btn {
       margin-top: 12px;
-      background: rgba(28,28,30,0.82);
-      backdrop-filter: blur(14px);
+      background: rgba(40,40,42,0.9);
+      position: relative;
     }
     #timer-btn.active {
       background: #fff;
       color: #000;
     }
 
+    /* Color palette – gắn ngay bên phải nút màu */
     #color-palette {
       position: absolute;
-      left: 54px;
-      top: 0;
-      background: rgba(28,28,30,0.95);
-      backdrop-filter: blur(18px);
+      left: 52px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(40,40,42,0.95);
       border-radius: 14px;
-      padding: 11px;
+      padding: 10px;
       display: none;
       grid-template-columns: repeat(2, 1fr);
-      gap: 9px;
+      gap: 8px;
       z-index: 40;
-      box-shadow: 0 10px 36px rgba(0,0,0,0.4);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.45);
     }
     #color-palette.show { display: grid; }
 
     .color-swatch {
-      width: 32px;
-      height: 32px;
+      width: 30px;
+      height: 30px;
       border-radius: 50%;
       border: 2px solid transparent;
       cursor: pointer;
@@ -265,19 +265,21 @@
       transform: scale(1.1);
     }
 
+    /* Timer menu – gắn ngay bên phải nút timer */
     #timer-menu {
       position: absolute;
-      left: 54px;
-      bottom: 0;
-      background: rgba(28,28,30,0.95);
-      backdrop-filter: blur(18px);
+      left: 52px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(40,40,42,0.95);
       border-radius: 12px;
       padding: 5px;
       display: none;
       flex-direction: column;
       gap: 2px;
       z-index: 40;
-      min-width: 74px;
+      min-width: 72px;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.45);
     }
     #timer-menu.show { display: flex; }
 
@@ -298,10 +300,10 @@
 
     #toast {
       position: fixed;
-      top: 20px;
+      top: 18px;
       left: 50%;
-      transform: translateX(-50%) translateY(-14px);
-      background: rgba(28,28,30,0.92);
+      transform: translateX(-50%) translateY(-12px);
+      background: rgba(40,40,42,0.95);
       color: #fff;
       padding: 10px 16px;
       border-radius: 11px;
@@ -312,7 +314,6 @@
       pointer-events: none;
       max-width: 88%;
       text-align: center;
-      backdrop-filter: blur(12px);
     }
     #toast.show {
       opacity: 1;
@@ -322,7 +323,7 @@
     /* ===== Right Controls ===== */
     .right-controls {
       position: absolute;
-      right: 12px;
+      right: 10px;
       top: 50%;
       transform: translateY(-50%);
       display: flex;
@@ -336,8 +337,7 @@
       display: flex;
       flex-direction: column;
       gap: 5px;
-      background: rgba(28,28,30,0.82);
-      backdrop-filter: blur(14px);
+      background: rgba(40,40,42,0.9);
       border-radius: 24px;
       padding: 5px;
     }
@@ -374,9 +374,7 @@
     }
     #shutter:active { transform: scale(0.9); }
 
-    #shutter.video-mode {
-      background: transparent;
-    }
+    #shutter.video-mode { background: transparent; }
     #shutter.video-mode::after {
       content: "";
       position: absolute;
@@ -385,9 +383,7 @@
       background: #ff3b30;
       transition: all 0.2s ease;
     }
-    #shutter.recording {
-      border-color: #ff3b30;
-    }
+    #shutter.recording { border-color: #ff3b30; }
     #shutter.recording::after {
       inset: 15px;
       border-radius: 5px;
@@ -399,13 +395,12 @@
       height: 36px;
       border-radius: 50%;
       border: none;
-      background: rgba(28,28,30,0.82);
+      background: rgba(40,40,42,0.9);
       color: #fff;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      backdrop-filter: blur(14px);
     }
     .flip-btn svg { width: 16px; height: 16px; }
 
@@ -450,10 +445,7 @@
       font-family: inherit;
       line-height: 1.45;
     }
-    .qr-actions {
-      display: flex;
-      gap: 10px;
-    }
+    .qr-actions { display: flex; gap: 10px; }
     .qr-actions button {
       flex: 1;
       padding: 12px;
@@ -463,19 +455,17 @@
       font-weight: 500;
       cursor: pointer;
     }
-    .qr-actions .copy-btn {
-      background: #0a84ff;
-      color: #fff;
-    }
-    .qr-actions .close-btn {
-      background: #3a3a3c;
-      color: #fff;
-    }
+    .qr-actions .copy-btn { background: #0a84ff; color: #fff; }
+    .qr-actions .close-btn { background: #3a3a3c; color: #fff; }
 
     @media (max-width: 500px) {
+      #stage {
+        width: min(calc(100vw - 100px), calc(100vh * 16 / 9));
+        height: min(calc((100vw - 100px) * 9 / 16), 100vh);
+      }
       .left-controls { left: 6px; }
       .right-controls { right: 6px; }
-      #shutter { width: 58px; height: 58px; }
+      #shutter { width: 56px; height: 56px; }
     }
   </style>
 </head>
@@ -505,7 +495,7 @@
 
     <!-- Left controls -->
     <div class="left-controls">
-      <div class="flash-group">
+      <div class="flash-group" id="flash-group">
         <button class="ctrl-btn" id="color-btn" title="Chọn màu đèn">
           <div class="dot" id="color-dot"></div>
         </button>
@@ -514,6 +504,17 @@
             <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
           </svg>
         </button>
+        <!-- palette gắn vào flash-group -->
+        <div id="color-palette">
+          <div class="color-swatch selected" data-color="#ffffff" style="background:#ffffff"></div>
+          <div class="color-swatch" data-color="#ffcc00" style="background:#ffcc00"></div>
+          <div class="color-swatch" data-color="#ff9500" style="background:#ff9500"></div>
+          <div class="color-swatch" data-color="#007aff" style="background:#007aff"></div>
+          <div class="color-swatch" data-color="#ff3b30" style="background:#ff3b30"></div>
+          <div class="color-swatch" data-color="#af52de" style="background:#af52de"></div>
+          <div class="color-swatch" data-color="#34c759" style="background:#34c759"></div>
+          <div class="color-swatch" data-color="#ff2d55" style="background:#ff2d55"></div>
+        </div>
       </div>
 
       <button class="ctrl-btn" id="timer-btn" title="Hẹn giờ">
@@ -521,26 +522,14 @@
           <circle cx="12" cy="12" r="9"/>
           <path d="M12 7v5l3 3"/>
         </svg>
+        <div id="timer-menu">
+          <button class="timer-opt active" data-sec="0">Tắt</button>
+          <button class="timer-opt" data-sec="3">3s</button>
+          <button class="timer-opt" data-sec="5">5s</button>
+          <button class="timer-opt" data-sec="10">10s</button>
+          <button class="timer-opt" data-sec="15">15s</button>
+        </div>
       </button>
-    </div>
-
-    <div id="color-palette">
-      <div class="color-swatch selected" data-color="#ffffff" style="background:#ffffff"></div>
-      <div class="color-swatch" data-color="#ffcc00" style="background:#ffcc00"></div>
-      <div class="color-swatch" data-color="#ff9500" style="background:#ff9500"></div>
-      <div class="color-swatch" data-color="#007aff" style="background:#007aff"></div>
-      <div class="color-swatch" data-color="#ff3b30" style="background:#ff3b30"></div>
-      <div class="color-swatch" data-color="#af52de" style="background:#af52de"></div>
-      <div class="color-swatch" data-color="#34c759" style="background:#34c759"></div>
-      <div class="color-swatch" data-color="#ff2d55" style="background:#ff2d55"></div>
-    </div>
-
-    <div id="timer-menu">
-      <button class="timer-opt active" data-sec="0">Tắt</button>
-      <button class="timer-opt" data-sec="3">3s</button>
-      <button class="timer-opt" data-sec="5">5s</button>
-      <button class="timer-opt" data-sec="10">10s</button>
-      <button class="timer-opt" data-sec="15">15s</button>
     </div>
 
     <!-- Right controls -->
@@ -687,33 +676,40 @@
       }, 150);
     }
 
-    // Điều chỉnh khung hình theo tỷ lệ thực của camera
+    /**
+     * Điều chỉnh khung camera theo tỷ lệ THẬT của video.
+     * - Giữ nguyên aspect ratio (không méo)
+     * - Phóng to tối đa trong stage mà không vượt ra ngoài (object-fit: contain)
+     */
     function adjustAspectRatio() {
       if (!video.videoWidth || !video.videoHeight) return;
 
-      const ratio = video.videoWidth / video.videoHeight;
+      const vw = video.videoWidth;
+      const vh = video.videoHeight;
+      const ratio = vw / vh;
+
       const stageW = stage.clientWidth;
       const stageH = stage.clientHeight;
       const stageRatio = stageW / stageH;
 
-      if (Math.abs(ratio - 16/9) < 0.08) {
-        // Camera gần 16:9 → phủ hết
-        cameraFrame.style.width = '100%';
-        cameraFrame.style.height = '100%';
-      } else if (ratio < stageRatio) {
-        // Camera hẹp hơn (4:3) → cao full, rộng theo tỷ lệ
-        cameraFrame.style.height = '100%';
-        cameraFrame.style.width = (stageH * ratio) + 'px';
+      let frameW, frameH;
+
+      if (ratio > stageRatio) {
+        // Camera rộng hơn stage → chiều rộng = full stage, chiều cao theo tỷ lệ
+        frameW = stageW;
+        frameH = stageW / ratio;
       } else {
-        // Camera rộng hơn → rộng full, cao theo tỷ lệ
-        cameraFrame.style.width = '100%';
-        cameraFrame.style.height = (stageW / ratio) + 'px';
+        // Camera cao hơn (hoặc bằng) → chiều cao = full stage, chiều rộng theo tỷ lệ
+        frameH = stageH;
+        frameW = stageH * ratio;
       }
+
+      cameraFrame.style.width = Math.round(frameW) + 'px';
+      cameraFrame.style.height = Math.round(frameH) + 'px';
     }
 
     async function startCamera(withAudio = false) {
       try {
-        // Nếu đã có stream và không cần audio mới → giữ nguyên
         if (state.stream && !withAudio) {
           const hasVideo = state.stream.getVideoTracks().some(t => t.readyState === 'live');
           if (hasVideo) {
@@ -722,7 +718,6 @@
           }
         }
 
-        // Dừng stream cũ
         if (state.stream) {
           state.stream.getTracks().forEach(t => t.stop());
           state.stream = null;
@@ -750,13 +745,58 @@
         await video.play();
         noCamera.classList.add('hidden');
 
-        setTimeout(adjustAspectRatio, 60);
-        setTimeout(adjustAspectRatio, 300);
+        // Chờ layout ổn định rồi chỉnh tỷ lệ
+        requestAnimationFrame(() => {
+          adjustAspectRatio();
+          setTimeout(adjustAspectRatio, 100);
+          setTimeout(adjustAspectRatio, 400);
+        });
       } catch (err) {
         console.error('Camera error:', err);
         noCamera.classList.remove('hidden');
         showToast('Không thể truy cập camera. Hãy kiểm tra quyền trình duyệt.');
       }
+    }
+
+    // ===== QR scanning – cải thiện =====
+    async function scanQRFromCanvas() {
+      const w = canvas.width;
+      const h = canvas.height;
+
+      // 1. Thử native BarcodeDetector trước (Chrome/Edge)
+      if ('BarcodeDetector' in window) {
+        try {
+          const detector = new BarcodeDetector({ formats: ['qr_code'] });
+          const bitmap = await createImageBitmap(canvas);
+          const codes = await detector.detect(bitmap);
+          bitmap.close();
+          if (codes && codes.length > 0 && codes[0].rawValue) {
+            return codes[0].rawValue;
+          }
+        } catch (e) {
+          console.warn('BarcodeDetector failed, fallback to jsQR', e);
+        }
+      }
+
+      // 2. jsQR – thử nhiều kích thước + inversion
+      const trySizes = [1, 0.75, 0.5];
+      for (const scale of trySizes) {
+        const tw = Math.max(200, Math.floor(w * scale));
+        const th = Math.max(200, Math.floor(h * scale));
+
+        const tmp = document.createElement('canvas');
+        tmp.width = tw;
+        tmp.height = th;
+        const tctx = tmp.getContext('2d');
+        tctx.drawImage(canvas, 0, 0, tw, th);
+
+        const imageData = tctx.getImageData(0, 0, tw, th);
+        const code = jsQR(imageData.data, tw, th, {
+          inversionAttempts: 'attemptBoth'
+        });
+        if (code && code.data) return code.data;
+      }
+      return null;
     }
 
     async function capturePhoto() {
@@ -795,7 +835,6 @@
       ctx.restore();
 
       if (!state.flashOn) {
-        // Nháy ĐEN
         shutterFlash.style.opacity = '0.9';
         playShutterSound();
         setTimeout(() => { shutterFlash.style.opacity = '0'; }, 55);
@@ -805,18 +844,13 @@
       }
 
       if (state.mode === 'qr') {
-        try {
-          const imageData = ctx.getImageData(0, 0, w, h);
-          const code = jsQR(imageData.data, w, h, { inversionAttempts: 'attemptBoth' });
-          if (code && code.data) {
-            qrResult.value = code.data;
-            qrPopup.classList.add('show');
-          } else {
-            showToast('Không tìm thấy mã QR. Hãy đưa QR vào giữa khung hình và chụp lại.');
-          }
-        } catch (e) {
-          console.error(e);
-          showToast('Lỗi khi quét QR');
+        showToast('Đang quét QR...');
+        const result = await scanQRFromCanvas();
+        if (result) {
+          qrResult.value = result;
+          qrPopup.classList.add('show');
+        } else {
+          showToast('Không tìm thấy mã QR. Hãy đưa QR vào giữa khung hình, đủ sáng và rõ.');
         }
         return;
       }
@@ -859,7 +893,6 @@
           videoBitsPerSecond: 2500000
         });
       } catch (e) {
-        console.error(e);
         showToast('Không thể bắt đầu quay video');
         return;
       }
@@ -925,9 +958,7 @@
       if (mode === 'video') {
         shutter.classList.add('video-mode');
         const hasAudio = state.stream && state.stream.getAudioTracks().some(t => t.readyState === 'live');
-        if (!hasAudio) {
-          await startCamera(true);
-        }
+        if (!hasAudio) await startCamera(true);
       } else {
         shutter.classList.remove('video-mode');
       }
@@ -952,9 +983,7 @@
       state.flashOn = !state.flashOn;
       flashBtn.classList.toggle('active', state.flashOn);
       updateBackground();
-      if (state.flashOn) {
-        showToast('Hãy bật độ sáng tối đa để có hiệu quả tốt nhất');
-      }
+      if (state.flashOn) showToast('Hãy bật độ sáng tối đa để có hiệu quả tốt nhất');
     });
 
     colorBtn.addEventListener('click', (e) => {
