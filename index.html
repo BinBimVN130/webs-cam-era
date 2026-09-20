@@ -6,11 +6,6 @@
   <title>Web Camera</title>
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <style>
-    :root {
-      --bg: #000000;
-      --text: #ffffff;
-    }
-
     * {
       margin: 0;
       padding: 0;
@@ -25,7 +20,7 @@
       overflow: hidden;
       background: #000;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      color: var(--text);
+      color: #fff;
     }
 
     #app {
@@ -36,17 +31,30 @@
       justify-content: center;
       position: relative;
       background: #000;
+      transition: background-color 0.25s ease;
     }
 
-    /* ===== Camera Frame 4:3 centered on black ===== */
+    /* Container 16:9 tối đa */
+    #stage {
+      position: relative;
+      width: min(96vw, calc(96vh * 16 / 9));
+      height: min(calc(96vw * 9 / 16), 96vh);
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.25s ease;
+    }
+
+    /* Camera frame - JS sẽ chỉnh tỷ lệ */
     #camera-frame {
       position: relative;
-      width: min(90vw, calc(90vh * 4 / 3));
-      height: min(calc(90vw * 3 / 4), 90vh);
-      background: #1a1a1a;
-      border-radius: 10px;
+      background: #111;
       overflow: hidden;
-      box-shadow: 0 0 0 1px rgba(255,255,255,0.06);
+      width: 100%;
+      height: 100%;
     }
 
     #video {
@@ -59,20 +67,7 @@
 
     #canvas { display: none; }
 
-    /* Flash overlay trên preview - mờ nhẹ */
-    #flash-overlay {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.2s ease;
-      z-index: 5;
-    }
-    #flash-overlay.active {
-      opacity: 0.22;
-    }
-
-    /* No camera - giống ảnh gốc */
+    /* No camera */
     #no-camera {
       position: absolute;
       inset: 0;
@@ -88,10 +83,10 @@
     #no-camera.hidden { display: none; }
 
     #no-camera .icon-wrap {
-      width: 80px;
-      height: 80px;
+      width: 72px;
+      height: 72px;
       margin-bottom: 16px;
-      opacity: 0.5;
+      opacity: 0.55;
     }
     #no-camera h2 {
       font-size: 20px;
@@ -113,7 +108,7 @@
       display: none;
       align-items: center;
       justify-content: center;
-      background: rgba(0,0,0,0.4);
+      background: rgba(0,0,0,0.45);
       z-index: 50;
       font-size: clamp(90px, 18vw, 140px);
       font-weight: 200;
@@ -156,18 +151,18 @@
       white-space: nowrap;
     }
 
-    /* Shutter flash nhẹ (chỉ khi KHÔNG bật flash) */
+    /* Shutter flash - MÀU ĐEN khi không bật flash */
     #shutter-flash {
       position: absolute;
       inset: 0;
-      background: #fff;
+      background: #000;
       opacity: 0;
       pointer-events: none;
       z-index: 40;
       transition: opacity 0.06s ease;
     }
 
-    /* Fullscreen flash (CHỈ khi bật flash) */
+    /* Fullscreen flash (chỉ khi bật flash) */
     #fullscreen-flash {
       position: fixed;
       inset: 0;
@@ -190,12 +185,11 @@
       z-index: 30;
     }
 
-    /* Nhóm màu + flash dính liền */
     .flash-group {
       display: flex;
       flex-direction: column;
       align-items: center;
-      background: rgba(28,28,30,0.8);
+      background: rgba(28,28,30,0.82);
       backdrop-filter: blur(14px);
       border-radius: 26px;
       padding: 5px;
@@ -233,7 +227,7 @@
 
     #timer-btn {
       margin-top: 12px;
-      background: rgba(28,28,30,0.8);
+      background: rgba(28,28,30,0.82);
       backdrop-filter: blur(14px);
     }
     #timer-btn.active {
@@ -241,7 +235,6 @@
       color: #000;
     }
 
-    /* Color palette */
     #color-palette {
       position: absolute;
       left: 54px;
@@ -272,7 +265,6 @@
       transform: scale(1.1);
     }
 
-    /* Timer menu */
     #timer-menu {
       position: absolute;
       left: 54px;
@@ -304,7 +296,6 @@
       background: rgba(255,255,255,0.14);
     }
 
-    /* Toast */
     #toast {
       position: fixed;
       top: 20px;
@@ -345,7 +336,7 @@
       display: flex;
       flex-direction: column;
       gap: 5px;
-      background: rgba(28,28,30,0.8);
+      background: rgba(28,28,30,0.82);
       backdrop-filter: blur(14px);
       border-radius: 24px;
       padding: 5px;
@@ -370,7 +361,6 @@
     }
     .mode-btn svg { width: 18px; height: 18px; }
 
-    /* Shutter */
     #shutter {
       width: 64px;
       height: 64px;
@@ -409,7 +399,7 @@
       height: 36px;
       border-radius: 50%;
       border: none;
-      background: rgba(28,28,30,0.8);
+      background: rgba(28,28,30,0.82);
       color: #fff;
       display: flex;
       align-items: center;
@@ -486,35 +476,31 @@
       .left-controls { left: 6px; }
       .right-controls { right: 6px; }
       #shutter { width: 58px; height: 58px; }
-      #camera-frame {
-        width: min(96vw, calc(88vh * 4 / 3));
-        height: min(calc(96vw * 3 / 4), 88vh);
-      }
     }
   </style>
 </head>
 <body>
   <div id="app">
-    <!-- Camera frame 4:3 -->
-    <div id="camera-frame">
-      <video id="video" autoplay playsinline muted></video>
-      <canvas id="canvas"></canvas>
-      <div id="flash-overlay"></div>
-      <div id="shutter-flash"></div>
+    <div id="stage">
+      <div id="camera-frame">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="canvas"></canvas>
+        <div id="shutter-flash"></div>
 
-      <div id="no-camera">
-        <svg class="icon-wrap" viewBox="0 0 24 24" fill="none">
-          <path d="M23 7l-7 5 7 5V7z" stroke="#555" stroke-width="1.5" fill="none"/>
-          <rect x="1" y="5" width="15" height="14" rx="2" stroke="#555" stroke-width="1.5" fill="none"/>
-          <path d="M2 2l20 20" stroke="#c0392b" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-        <h2>Không có camera</h2>
-        <p>Kiểm tra lại quyền của trình duyệt, cáp camera,...</p>
+        <div id="no-camera">
+          <svg class="icon-wrap" viewBox="0 0 24 24" fill="none">
+            <path d="M23 7l-7 5 7 5V7z" stroke="#555" stroke-width="1.5"/>
+            <rect x="1" y="5" width="15" height="14" rx="2" stroke="#555" stroke-width="1.5"/>
+            <path d="M2 2l20 20" stroke="#c0392b" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <h2>Không có camera</h2>
+          <p>Kiểm tra lại quyền của trình duyệt, cáp camera,...</p>
+        </div>
+
+        <div id="countdown"></div>
+        <div id="rec-timer">00:00:00</div>
+        <div id="qr-hint">Đưa QR vào khung hình và chụp ảnh</div>
       </div>
-
-      <div id="countdown"></div>
-      <div id="rec-timer">00:00:00</div>
-      <div id="qr-hint">Đưa QR vào khung hình và chụp ảnh</div>
     </div>
 
     <!-- Left controls -->
@@ -538,7 +524,6 @@
       </button>
     </div>
 
-    <!-- Color palette -->
     <div id="color-palette">
       <div class="color-swatch selected" data-color="#ffffff" style="background:#ffffff"></div>
       <div class="color-swatch" data-color="#ffcc00" style="background:#ffcc00"></div>
@@ -550,7 +535,6 @@
       <div class="color-swatch" data-color="#ff2d55" style="background:#ff2d55"></div>
     </div>
 
-    <!-- Timer menu -->
     <div id="timer-menu">
       <button class="timer-opt active" data-sec="0">Tắt</button>
       <button class="timer-opt" data-sec="3">3s</button>
@@ -594,7 +578,6 @@
       </button>
     </div>
 
-    <!-- QR Popup -->
     <div id="qr-popup">
       <div class="qr-box">
         <h3>Kết quả quét QR</h3>
@@ -626,11 +609,13 @@
       facingMode: 'user'
     };
 
+    const app = document.getElementById('app');
+    const stage = document.getElementById('stage');
+    const cameraFrame = document.getElementById('camera-frame');
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     const noCamera = document.getElementById('no-camera');
-    const flashOverlay = document.getElementById('flash-overlay');
     const countdownEl = document.getElementById('countdown');
     const recTimerEl = document.getElementById('rec-timer');
     const qrHint = document.getElementById('qr-hint');
@@ -679,12 +664,13 @@
       video.style.transform = `scale(${state.flipH ? -1 : 1}, ${state.flipV ? -1 : 1})`;
     }
 
-    function updateFlashOverlay() {
+    function updateBackground() {
       if (state.flashOn) {
-        flashOverlay.style.background = state.flashColor;
-        flashOverlay.classList.add('active');
+        app.style.background = state.flashColor;
+        stage.style.background = state.flashColor;
       } else {
-        flashOverlay.classList.remove('active');
+        app.style.background = '#000';
+        stage.style.background = '#000';
       }
     }
 
@@ -701,10 +687,45 @@
       }, 150);
     }
 
-    async function startCamera() {
+    // Điều chỉnh khung hình theo tỷ lệ thực của camera
+    function adjustAspectRatio() {
+      if (!video.videoWidth || !video.videoHeight) return;
+
+      const ratio = video.videoWidth / video.videoHeight;
+      const stageW = stage.clientWidth;
+      const stageH = stage.clientHeight;
+      const stageRatio = stageW / stageH;
+
+      if (Math.abs(ratio - 16/9) < 0.08) {
+        // Camera gần 16:9 → phủ hết
+        cameraFrame.style.width = '100%';
+        cameraFrame.style.height = '100%';
+      } else if (ratio < stageRatio) {
+        // Camera hẹp hơn (4:3) → cao full, rộng theo tỷ lệ
+        cameraFrame.style.height = '100%';
+        cameraFrame.style.width = (stageH * ratio) + 'px';
+      } else {
+        // Camera rộng hơn → rộng full, cao theo tỷ lệ
+        cameraFrame.style.width = '100%';
+        cameraFrame.style.height = (stageW / ratio) + 'px';
+      }
+    }
+
+    async function startCamera(withAudio = false) {
       try {
+        // Nếu đã có stream và không cần audio mới → giữ nguyên
+        if (state.stream && !withAudio) {
+          const hasVideo = state.stream.getVideoTracks().some(t => t.readyState === 'live');
+          if (hasVideo) {
+            noCamera.classList.add('hidden');
+            return;
+          }
+        }
+
+        // Dừng stream cũ
         if (state.stream) {
           state.stream.getTracks().forEach(t => t.stop());
+          state.stream = null;
         }
 
         const constraints = {
@@ -714,16 +735,25 @@
             height: { ideal: 720 },
             frameRate: { ideal: 30, max: 30 }
           },
-          audio: state.mode === 'video'
+          audio: !!withAudio
         };
 
         state.stream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = state.stream;
         video.muted = true;
+
+        await new Promise((resolve) => {
+          if (video.readyState >= 2) resolve();
+          else video.onloadedmetadata = () => resolve();
+        });
+
         await video.play();
         noCamera.classList.add('hidden');
+
+        setTimeout(adjustAspectRatio, 60);
+        setTimeout(adjustAspectRatio, 300);
       } catch (err) {
-        console.error(err);
+        console.error('Camera error:', err);
         noCamera.classList.remove('hidden');
         showToast('Không thể truy cập camera. Hãy kiểm tra quyền trình duyệt.');
       }
@@ -732,7 +762,6 @@
     async function capturePhoto() {
       if (!state.stream || state.isCounting || !video.videoWidth) return;
 
-      // Timer
       if (state.timerSec > 0) {
         state.isCounting = true;
         countdownEl.classList.add('show');
@@ -750,14 +779,12 @@
       canvas.width = w;
       canvas.height = h;
 
-      // Fullscreen flash CHỈ khi bật flash
       if (state.flashOn) {
         fullscreenFlash.style.background = state.flashColor;
         fullscreenFlash.style.opacity = '1';
-        await new Promise(r => requestAnimationFrame(() => setTimeout(r, 100)));
+        await new Promise(r => requestAnimationFrame(() => setTimeout(r, 90)));
       }
 
-      // Vẽ frame
       ctx.save();
       if (state.flipH || state.flipV) {
         ctx.translate(w / 2, h / 2);
@@ -767,17 +794,16 @@
       ctx.drawImage(video, 0, 0, w, h);
       ctx.restore();
 
-      // Hiệu ứng shutter nhẹ khi KHÔNG bật flash
       if (!state.flashOn) {
-        shutterFlash.style.opacity = '0.7';
+        // Nháy ĐEN
+        shutterFlash.style.opacity = '0.9';
         playShutterSound();
-        setTimeout(() => { shutterFlash.style.opacity = '0'; }, 60);
+        setTimeout(() => { shutterFlash.style.opacity = '0'; }, 55);
       } else {
         playShutterSound();
-        setTimeout(() => { fullscreenFlash.style.opacity = '0'; }, 70);
+        setTimeout(() => { fullscreenFlash.style.opacity = '0'; }, 60);
       }
 
-      // QR
       if (state.mode === 'qr') {
         try {
           const imageData = ctx.getImageData(0, 0, w, h);
@@ -786,15 +812,15 @@
             qrResult.value = code.data;
             qrPopup.classList.add('show');
           } else {
-            showToast('Không tìm thấy mã QR. Hãy đưa QR vào giữa khung hình.');
+            showToast('Không tìm thấy mã QR. Hãy đưa QR vào giữa khung hình và chụp lại.');
           }
         } catch (e) {
+          console.error(e);
           showToast('Lỗi khi quét QR');
         }
         return;
       }
 
-      // Lưu PNG
       canvas.toBlob(blob => {
         if (blob) {
           downloadBlob(blob, `photo_${Date.now()}.png`);
@@ -803,30 +829,50 @@
       }, 'image/png', 0.92);
     }
 
+    function getSupportedMime() {
+      const types = [
+        'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+        'video/mp4',
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
+        'video/webm'
+      ];
+      for (const t of types) {
+        if (MediaRecorder.isTypeSupported(t)) return t;
+      }
+      return '';
+    }
+
     function startRecording() {
       if (!state.stream || state.isRecording) return;
 
       state.recordedChunks = [];
-      let mime = 'video/webm;codecs=vp8,opus';
-      if (!MediaRecorder.isTypeSupported(mime)) mime = 'video/webm';
-
-      try {
-        state.mediaRecorder = new MediaRecorder(state.stream, {
-          mimeType: mime,
-          videoBitsPerSecond: 2000000
-        });
-      } catch (e) {
+      const mime = getSupportedMime();
+      if (!mime) {
         showToast('Trình duyệt không hỗ trợ quay video');
         return;
       }
 
+      try {
+        state.mediaRecorder = new MediaRecorder(state.stream, {
+          mimeType: mime,
+          videoBitsPerSecond: 2500000
+        });
+      } catch (e) {
+        console.error(e);
+        showToast('Không thể bắt đầu quay video');
+        return;
+      }
+
+      const isMp4 = mime.includes('mp4');
       state.mediaRecorder.ondataavailable = e => {
         if (e.data && e.data.size > 0) state.recordedChunks.push(e.data);
       };
       state.mediaRecorder.onstop = () => {
-        const blob = new Blob(state.recordedChunks, { type: 'video/webm' });
-        downloadBlob(blob, `video_${Date.now()}.webm`);
-        showToast('Đã lưu video');
+        const blob = new Blob(state.recordedChunks, { type: mime });
+        const ext = isMp4 ? 'mp4' : 'webm';
+        downloadBlob(blob, `video_${Date.now()}.${ext}`);
+        showToast('Đã lưu video (' + ext.toUpperCase() + ')');
         state.recordedChunks = [];
       };
 
@@ -865,21 +911,27 @@
       recInterval = null;
     }
 
-    function setMode(mode) {
+    async function setMode(mode) {
       if (state.isRecording) {
         showToast('Hãy dừng quay video trước');
         return;
       }
       state.mode = mode;
+
       document.querySelectorAll('.mode-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.mode === mode);
       });
+
       if (mode === 'video') {
         shutter.classList.add('video-mode');
-        startCamera();
+        const hasAudio = state.stream && state.stream.getAudioTracks().some(t => t.readyState === 'live');
+        if (!hasAudio) {
+          await startCamera(true);
+        }
       } else {
         shutter.classList.remove('video-mode');
       }
+
       qrHint.style.display = mode === 'qr' ? 'block' : 'none';
     }
 
@@ -899,8 +951,10 @@
     flashBtn.addEventListener('click', () => {
       state.flashOn = !state.flashOn;
       flashBtn.classList.toggle('active', state.flashOn);
-      updateFlashOverlay();
-      if (state.flashOn) showToast('Hãy bật độ sáng tối đa để có hiệu quả tốt nhất');
+      updateBackground();
+      if (state.flashOn) {
+        showToast('Hãy bật độ sáng tối đa để có hiệu quả tốt nhất');
+      }
     });
 
     colorBtn.addEventListener('click', (e) => {
@@ -915,7 +969,7 @@
         sw.classList.add('selected');
         state.flashColor = sw.dataset.color;
         colorDot.style.background = state.flashColor;
-        updateFlashOverlay();
+        updateBackground();
         colorPalette.classList.remove('show');
       });
     });
@@ -967,9 +1021,11 @@
       }
     });
 
+    window.addEventListener('resize', () => adjustAspectRatio());
+
     // Init
     if (navigator.mediaDevices?.getUserMedia) {
-      startCamera();
+      startCamera(false);
     } else {
       noCamera.classList.remove('hidden');
       showToast('Trình duyệt không hỗ trợ camera');
