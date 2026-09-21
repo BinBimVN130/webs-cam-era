@@ -26,7 +26,12 @@
     }
     #camera-frame{
       position:relative;background:#111;overflow:hidden;border-radius:10px;
-      width:100%;height:100%;transition:width .25s,height .25s;
+      width:100%;height:100%;
+      transition:width .25s ease,height .25s ease,opacity .22s ease,transform .25s ease;
+    }
+    #camera-frame.mode-switching{
+      opacity:.5;
+      transform:scale(0.98);
     }
     #video-wrap{width:100%;height:100%;overflow:hidden;position:relative}
     #video{
@@ -61,10 +66,11 @@
       font-size:13px;z-index:15;display:none;white-space:nowrap;
     }
     #zoom-label{
-      position:fixed;bottom:14px;left:50%;transform:translateX(-50%);
+      position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
       font-size:15px;font-weight:600;color:rgba(255,255,255,.55);
       z-index:35;pointer-events:none;letter-spacing:.4px;
       display:none;text-shadow:0 1px 4px rgba(0,0,0,.5);
+      transition:opacity .2s ease;
     }
 
     #shutter-flash{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;z-index:40;transition:opacity .05s}
@@ -248,12 +254,14 @@
       visibility:hidden !important;pointer-events:none !important;
     }
 
-    /* Mic level meter */
+    /* Mic level meter - đáy màn hình */
     #mic-meter{
-      display:none;position:absolute;left:12px;bottom:10px;z-index:28;
+      display:none;position:fixed;left:18px;bottom:16px;z-index:36;
       align-items:center;gap:8px;pointer-events:none;
+      opacity:0;transform:translateY(8px);
+      transition:opacity .25s ease, transform .25s ease;
     }
-    #mic-meter.show{display:flex}
+    #mic-meter.show{display:flex;opacity:1;transform:translateY(0)}
     #mic-meter svg{width:14px;height:14px;flex-shrink:0;opacity:.85}
     #mic-meter .bar-bg{
       width:72px;height:6px;border-radius:3px;background:rgba(255,255,255,.2);
@@ -322,14 +330,6 @@
       <div id="countdown"></div>
       <div id="rec-timer">00:00:00</div>
       <div id="qr-hint">Đưa QR vào khung hình để bắt đầu quét</div>
-    </div>
-
-    <div id="mic-meter">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
-        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-        <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/>
-      </svg>
-      <div class="bar-bg"><div class="bar-fill" id="mic-bar"></div></div>
     </div>
 
     <!-- Zoom cố định theo stage -->
@@ -462,6 +462,13 @@
     </div>
   </div>
   <div id="fullscreen-flash"></div>
+  <div id="mic-meter">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/>
+      </svg>
+      <div class="bar-bg"><div class="bar-fill" id="mic-bar"></div></div>
+    </div>
   <div id="zoom-label">1x</div>
   <div id="toast"></div>
 </div>
@@ -908,8 +915,12 @@ function stopMicMeter(){
 
 async function setMode(mode){
   if(state.isRecording){showToast('Hãy dừng quay video trước');return}
+  if(mode === state.mode) return;
   stopQRScan();closeAllMenus();
   const prev = state.mode;
+  // Hiệu ứng chuyển chế độ
+  cameraFrame.classList.add('mode-switching');
+  await new Promise(r => setTimeout(r, 120));
   state.mode=mode;
   document.querySelectorAll('.mode-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
 
@@ -938,6 +949,9 @@ async function setMode(mode){
     }
   }
   updateShutterColor();
+  requestAnimationFrame(() => {
+    setTimeout(() => cameraFrame.classList.remove('mode-switching'), 80);
+  });
 }
 
 // Zoom
