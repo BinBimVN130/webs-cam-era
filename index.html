@@ -590,12 +590,32 @@ function adjustAspectRatio(){
 
 async function startCamera(withAudio=false){
   try{
-    if(state.stream&&!withAudio){
-      if(state.stream.getVideoTracks().some(t=>t.readyState==='live')){noCamera.classList.add('hidden');return}
+    // Đã có video live và không cần thêm audio → giữ nguyên
+    if(state.stream && !withAudio){
+      const liveVid = state.stream.getVideoTracks().some(t=>t.readyState==='live');
+      if(liveVid){
+        noCamera.classList.add('hidden');
+        return;
+      }
     }
-    if(state.stream){state.stream.getTracks().forEach(t=>t.stop());state.stream=null}
-    state.stream=await navigator.mediaDevices.getUserMedia({
-      video:{
+    // Cần audio nhưng đã có video+audio live → giữ
+    if(state.stream && withAudio){
+      const liveVid = state.stream.getVideoTracks().some(t=>t.readyState==='live');
+      const liveAud = state.stream.getAudioTracks().some(t=>t.readyState==='live');
+      if(liveVid && liveAud){
+        noCamera.classList.add('hidden');
+        return;
+      }
+    }
+
+    // Dừng stream cũ trước khi mở mới
+    if(state.stream){
+      state.stream.getTracks().forEach(t=>{ try{t.stop()}catch(e){} });
+      state.stream=null;
+    }
+
+    state.stream = await navigator.mediaDevices.getUserMedia({
+      video: {
         facingMode: state.facingMode,
         width: { ideal: 1280 },
         height: { ideal: 720 },
@@ -603,14 +623,16 @@ async function startCamera(withAudio=false){
       },
       audio: !!withAudio
     });
-    video.srcObject=state.stream;video.muted=true;
-    await new Promise(r=>{if(video.readyState>=2)r();else video.onloadedmetadata=()=>r()});
+    video.srcObject = state.stream;
+    video.muted = true;
+    await new Promise(r=>{ if(video.readyState>=2) r(); else video.onloadedmetadata=()=>r(); });
     await video.play();
     noCamera.classList.add('hidden');
-    requestAnimationFrame(()=>{adjustAspectRatio();setTimeout(adjustAspectRatio,150)});
+    requestAnimationFrame(()=>{ adjustAspectRatio(); setTimeout(adjustAspectRatio, 150); });
     startFpsCounter();
   }catch(e){
-    console.error(e);noCamera.classList.remove('hidden');
+    console.error(e);
+    noCamera.classList.remove('hidden');
     showToast('Không thể truy cập camera.');
   }
 }
@@ -792,18 +814,35 @@ function stopRecTimer(){clearInterval(recInterval);recInterval=null}
 async function setMode(mode){
   if(state.isRecording){showToast('Hãy dừng quay video trước');return}
   stopQRScan();closeAllMenus();
+  const prev = state.mode;
   state.mode=mode;
   document.querySelectorAll('.mode-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
+
   if(mode==='video'){
-    shutter.classList.add('video-mode');shutter.classList.remove('hidden-mode');
-    const hasAudio=state.stream?.getAudioTracks().some(t=>t.readyState==='live');
-    if(!hasAudio) await startCamera(true);
-  }else if(mode==='qr'){
-    shutter.classList.remove('video-mode');shutter.classList.add('hidden-mode');
-    qrHint.style.display='block';startQRScan();
-  }else{
-    shutter.classList.remove('video-mode');shutter.classList.remove('hidden-mode');
+    shutter.classList.add('video-mode');
+    shutter.classList.remove('hidden-mode');
     qrHint.style.display='none';
+    // Cần audio → mở lại stream có mic (chỉ khi chưa có audio)
+    const hasAudio = state.stream?.getAudioTracks().some(t=>t.readyState==='live');
+    if(!hasAudio) await startCamera(true);
+  } else {
+    // Rời video: tắt audio track để giảm tải, giữ video track
+    if(prev==='video' && state.stream){
+      state.stream.getAudioTracks().forEach(t=>{
+        try{ t.stop(); }catch(e){}
+      });
+      // Một số trình duyệt vẫn giữ track "ended" → lọc bỏ
+      // Không restart camera để tránh nháy; chỉ bỏ mic
+    }
+    shutter.classList.remove('video-mode');
+    if(mode==='qr'){
+      shutter.classList.add('hidden-mode');
+      qrHint.style.display='block';
+      startQRScan();
+    } else {
+      shutter.classList.remove('hidden-mode');
+      qrHint.style.display='none';
+    }
   }
   updateShutterColor();
 }
