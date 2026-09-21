@@ -61,10 +61,10 @@
       font-size:13px;z-index:15;display:none;white-space:nowrap;
     }
     #zoom-label{
-      position:absolute;bottom:10px;left:50%;transform:translateX(-50%);
-      font-size:12px;font-weight:500;color:rgba(255,255,255,.5);
-      z-index:15;pointer-events:none;letter-spacing:.3px;
-      display:none;
+      position:fixed;bottom:14px;left:50%;transform:translateX(-50%);
+      font-size:15px;font-weight:600;color:rgba(255,255,255,.55);
+      z-index:35;pointer-events:none;letter-spacing:.4px;
+      display:none;text-shadow:0 1px 4px rgba(0,0,0,.5);
     }
 
     #shutter-flash{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;z-index:40;transition:opacity .05s}
@@ -247,7 +247,24 @@
     .recording-active .adj-popup {
       visibility:hidden !important;pointer-events:none !important;
     }
+
+    /* Mic level meter */
+    #mic-meter{
+      display:none;position:absolute;left:12px;bottom:10px;z-index:28;
+      align-items:center;gap:8px;pointer-events:none;
+    }
+    #mic-meter.show{display:flex}
+    #mic-meter svg{width:14px;height:14px;flex-shrink:0;opacity:.85}
+    #mic-meter .bar-bg{
+      width:72px;height:6px;border-radius:3px;background:rgba(255,255,255,.2);
+      overflow:hidden;
+    }
+    #mic-meter .bar-fill{
+      height:100%;width:0%;border-radius:3px;
+      background:#34c759;transition:width .05s linear, background .1s;
+    }
     .recording-active #shutter{visibility:visible !important;pointer-events:auto !important}
+    .recording-active #mic-meter{display:flex !important;visibility:visible !important}
 
     .flip-btn{
       width:36px;height:36px;border-radius:50%;border:none;
@@ -305,7 +322,14 @@
       <div id="countdown"></div>
       <div id="rec-timer">00:00:00</div>
       <div id="qr-hint">Đưa QR vào khung hình để bắt đầu quét</div>
-      <div id="zoom-label">1x</div>
+    </div>
+
+    <div id="mic-meter">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/>
+      </svg>
+      <div class="bar-bg"><div class="bar-fill" id="mic-bar"></div></div>
     </div>
 
     <!-- Zoom cố định theo stage -->
@@ -438,6 +462,7 @@
     </div>
   </div>
   <div id="fullscreen-flash"></div>
+  <div id="zoom-label">1x</div>
   <div id="toast"></div>
 </div>
 
@@ -612,6 +637,7 @@ async function startCamera(withAudio=false){
     if(state.stream){
       state.stream.getTracks().forEach(t=>{ try{t.stop()}catch(e){} });
       state.stream=null;
+      state._fpsRunning = false; // cho phép đếm lại sau khi mở cam mới
     }
 
     state.stream = await navigator.mediaDevices.getUserMedia({
@@ -630,6 +656,7 @@ async function startCamera(withAudio=false){
     noCamera.classList.add('hidden');
     requestAnimationFrame(()=>{ adjustAspectRatio(); setTimeout(adjustAspectRatio, 150); });
     startFpsCounter();
+    if(state.mode === 'video') startMicMeter();
   }catch(e){
     console.error(e);
     noCamera.classList.remove('hidden');
@@ -638,10 +665,22 @@ async function startCamera(withAudio=false){
 }
 
 function startFpsCounter(){
-  state.frameCount=0;state.lastFpsTime=performance.now();
+  // Tránh đăng ký nhiều vòng đếm → FPS ảo (70...)
+  if(state._fpsRunning) return;
+  state._fpsRunning = true;
+  state.frameCount = 0;
+  state.lastFpsTime = performance.now();
+  state._lastMediaTime = -1;
+
   if(typeof video.requestVideoFrameCallback === 'function'){
     const onFrame = (_now, meta) => {
-      state.frameCount++;
+      if(!state._fpsRunning) return;
+      // Chỉ đếm khi mediaTime đổi (frame mới từ camera)
+      const mt = meta && typeof meta.mediaTime === 'number' ? meta.mediaTime : null;
+      if(mt === null || mt !== state._lastMediaTime){
+        if(mt !== null) state._lastMediaTime = mt;
+        state.frameCount++;
+      }
       const now = performance.now();
       if(now - state.lastFpsTime >= 1000){
         fpsEl.textContent = 'FPS: ' + state.frameCount;
@@ -653,6 +692,7 @@ function startFpsCounter(){
     video.requestVideoFrameCallback(onFrame);
   } else {
     const updateFromTrack = () => {
+      if(!state._fpsRunning) return;
       try{
         const track = state.stream?.getVideoTracks()?.[0];
         const fr = track?.getSettings?.()?.frameRate;
@@ -811,6 +851,61 @@ function startRecTimer(){
 }
 function stopRecTimer(){clearInterval(recInterval);recInterval=null}
 
+/* ===== Mic level meter (Web Audio) ===== */
+let micAudioCtx = null;
+let micAnalyser = null;
+let micSource = null;
+let micRaf = null;
+const micMeter = document.getElementById('mic-meter');
+const micBar = document.getElementById('mic-bar');
+
+function startMicMeter(){
+  stopMicMeter();
+  const track = state.stream?.getAudioTracks()?.find(t => t.readyState === 'live');
+  if(!track || !micMeter || !micBar) return;
+  try{
+    micAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    micSource = micAudioCtx.createMediaStreamSource(new MediaStream([track]));
+    micAnalyser = micAudioCtx.createAnalyser();
+    micAnalyser.fftSize = 256;
+    micAnalyser.smoothingTimeConstant = 0.6;
+    micSource.connect(micAnalyser);
+    // không connect destination → không phát loa, không feedback
+    micMeter.classList.add('show');
+    const data = new Uint8Array(micAnalyser.fftSize);
+    const loop = () => {
+      if(!micAnalyser) return;
+      micAnalyser.getByteTimeDomainData(data);
+      // RMS
+      let sum = 0;
+      for(let i = 0; i < data.length; i++){
+        const v = (data[i] - 128) / 128;
+        sum += v * v;
+      }
+      const rms = Math.sqrt(sum / data.length);
+      // scale: 0~0.02 im lặng, 0.25+ rất to
+      let level = Math.min(1, rms * 4.5);
+      micBar.style.width = (level * 100) + '%';
+      if(level < 0.35) micBar.style.background = '#34c759';
+      else if(level < 0.65) micBar.style.background = '#ff9500';
+      else micBar.style.background = '#ff3b30';
+      micRaf = requestAnimationFrame(loop);
+    };
+    micRaf = requestAnimationFrame(loop);
+  }catch(e){ console.warn('Mic meter', e); }
+}
+
+function stopMicMeter(){
+  if(micRaf){ cancelAnimationFrame(micRaf); micRaf = null; }
+  try{ micSource && micSource.disconnect(); }catch(e){}
+  try{ micAnalyser && micAnalyser.disconnect(); }catch(e){}
+  try{ micAudioCtx && micAudioCtx.close(); }catch(e){}
+  micSource = null; micAnalyser = null; micAudioCtx = null;
+  if(micMeter) micMeter.classList.remove('show');
+  if(micBar){ micBar.style.width = '0%'; micBar.style.background = '#34c759'; }
+}
+
+
 async function setMode(mode){
   if(state.isRecording){showToast('Hãy dừng quay video trước');return}
   stopQRScan();closeAllMenus();
@@ -822,17 +917,15 @@ async function setMode(mode){
     shutter.classList.add('video-mode');
     shutter.classList.remove('hidden-mode');
     qrHint.style.display='none';
-    // Cần audio → mở lại stream có mic (chỉ khi chưa có audio)
     const hasAudio = state.stream?.getAudioTracks().some(t=>t.readyState==='live');
     if(!hasAudio) await startCamera(true);
+    startMicMeter();
   } else {
-    // Rời video: tắt audio track để giảm tải, giữ video track
+    stopMicMeter();
     if(prev==='video' && state.stream){
       state.stream.getAudioTracks().forEach(t=>{
         try{ t.stop(); }catch(e){}
       });
-      // Một số trình duyệt vẫn giữ track "ended" → lọc bỏ
-      // Không restart camera để tránh nháy; chỉ bỏ mic
     }
     shutter.classList.remove('video-mode');
     if(mode==='qr'){
