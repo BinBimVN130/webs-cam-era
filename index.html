@@ -60,6 +60,12 @@
       background:rgba(0,0,0,.65);color:#fff;padding:8px 18px;border-radius:20px;
       font-size:13px;z-index:15;display:none;white-space:nowrap;
     }
+    #zoom-label{
+      position:absolute;bottom:10px;left:50%;transform:translateX(-50%);
+      font-size:12px;font-weight:500;color:rgba(255,255,255,.5);
+      z-index:15;pointer-events:none;letter-spacing:.3px;
+      display:none;
+    }
 
     #shutter-flash{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;z-index:40;transition:opacity .05s}
     #fullscreen-flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:200;transition:opacity .4s}
@@ -90,8 +96,9 @@
       width:20px;height:1px;background:rgba(255,255,255,.22);margin:2px 0;border:none;flex-shrink:0;
     }
     #reset-btn{
-      position:absolute;left:12px;bottom:18px;z-index:30;
-      /* tách khỏi cột nút → không làm giật layout */
+      position:absolute;left:12px;
+      top:calc(50% + 200px);
+      z-index:30;
     }
     .flash-group{
       display:flex;flex-direction:column;align-items:center;
@@ -226,6 +233,22 @@
     #shutter.dark-mode::after{background:#1c1c1e}
     #shutter.hidden-mode{visibility:hidden;pointer-events:none}
 
+    /* Khi đang quay: ẩn hết trừ nút dừng */
+    .recording-active .left-controls,
+    .recording-active #reset-btn,
+    .recording-active .zoom-control,
+    .recording-active .mode-switcher,
+    .recording-active .flip-btn,
+    .recording-active #fps,
+    .recording-active #zoom-label,
+    .recording-active #qr-hint,
+    .recording-active #color-palette,
+    .recording-active #timer-menu,
+    .recording-active .adj-popup {
+      visibility:hidden !important;pointer-events:none !important;
+    }
+    .recording-active #shutter{visibility:visible !important;pointer-events:auto !important}
+
     .flip-btn{
       width:36px;height:36px;border-radius:50%;border:none;
       background:rgba(40,40,42,.92);color:#fff;
@@ -253,7 +276,7 @@
     @media(max-width:600px){
       #stage{width:min(calc(100vw - 130px),calc(86vh * 16 / 9));height:min(calc((100vw - 130px)*9/16),86vh)}
       .left-controls{left:6px}.right-controls{right:6px}
-      #reset-btn{left:6px;bottom:14px}
+      #reset-btn{left:6px;top:calc(50% + 180px)}
       #shutter{width:56px;height:56px}
       .zoom-control{right:10px;height:130px}
       .zoom-slider{height:100px}
@@ -282,6 +305,7 @@
       <div id="countdown"></div>
       <div id="rec-timer">00:00:00</div>
       <div id="qr-hint">Đưa QR vào khung hình để bắt đầu quét</div>
+      <div id="zoom-label">1x</div>
     </div>
 
     <!-- Zoom cố định theo stage -->
@@ -571,8 +595,13 @@ async function startCamera(withAudio=false){
     }
     if(state.stream){state.stream.getTracks().forEach(t=>t.stop());state.stream=null}
     state.stream=await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:state.facingMode,width:{ideal:1280},height:{ideal:720},frameRate:{ideal:30,max:30}},
-      audio:!!withAudio
+      video:{
+        facingMode: state.facingMode,
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        frameRate: { ideal: 60, min: 24 }
+      },
+      audio: !!withAudio
     });
     video.srcObject=state.stream;video.muted=true;
     await new Promise(r=>{if(video.readyState>=2)r();else video.onloadedmetadata=()=>r()});
@@ -588,25 +617,24 @@ async function startCamera(withAudio=false){
 
 function startFpsCounter(){
   state.frameCount=0;state.lastFpsTime=performance.now();
-  // Ưu tiên đếm frame thật từ camera
   if(typeof video.requestVideoFrameCallback === 'function'){
-    const onFrame = () => {
+    const onFrame = (_now, meta) => {
       state.frameCount++;
-      const now=performance.now();
-      if(now-state.lastFpsTime>=1000){
-        fpsEl.textContent='FPS: '+state.frameCount;
-        state.frameCount=0;state.lastFpsTime=now;
+      const now = performance.now();
+      if(now - state.lastFpsTime >= 1000){
+        fpsEl.textContent = 'FPS: ' + state.frameCount;
+        state.frameCount = 0;
+        state.lastFpsTime = now;
       }
       video.requestVideoFrameCallback(onFrame);
     };
     video.requestVideoFrameCallback(onFrame);
   } else {
-    // Fallback: lấy frameRate từ track
     const updateFromTrack = () => {
       try{
         const track = state.stream?.getVideoTracks()?.[0];
         const fr = track?.getSettings?.()?.frameRate;
-        if(fr) fpsEl.textContent='FPS: '+Math.round(fr);
+        if(fr) fpsEl.textContent = 'FPS: ' + Math.round(fr);
       }catch(e){}
       setTimeout(updateFromTrack, 1000);
     };
@@ -712,8 +740,17 @@ function startRecording(){
   const audioTracks=state.stream.getAudioTracks();
   if(audioTracks.length) canvasStream.addTrack(audioTracks[0]);
   state.recordedChunks=[];
-  const mime=MediaRecorder.isTypeSupported('video/webm;codecs=vp9')?'video/webm;codecs=vp9'
-            :MediaRecorder.isTypeSupported('video/webm')?'video/webm':'';
+  const mimeCandidates = [
+    'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+    'video/mp4',
+    'video/webm;codecs=vp9,opus',
+    'video/webm;codecs=vp8,opus',
+    'video/webm'
+  ];
+  let mime = '';
+  for(const t of mimeCandidates){
+    if(MediaRecorder.isTypeSupported(t)){ mime = t; break; }
+  }
   if(!mime){showToast('Trình duyệt không hỗ trợ quay video');cancelAnimationFrame(state.recAnimId);return}
   try{state.mediaRecorder=new MediaRecorder(canvasStream,{mimeType:mime,videoBitsPerSecond:2500000})}
   catch(e){showToast('Không thể quay video');cancelAnimationFrame(state.recAnimId);return}
@@ -721,18 +758,23 @@ function startRecording(){
   state.mediaRecorder.onstop=()=>{
     cancelAnimationFrame(state.recAnimId);
     const blob=new Blob(state.recordedChunks,{type:mime});
-    downloadBlob(blob,`video_${Date.now()}.webm`);
-    showToast('Đã lưu video');state.recordedChunks=[];
+    const ext = mime.includes('mp4') ? 'mp4' : 'webm';
+    downloadBlob(blob, `video_${Date.now()}.${ext}`);
+    showToast('Đã lưu video (.' + ext + ')');
+    state.recordedChunks=[];
   };
   state.mediaRecorder.start(200);
   state.isRecording=true;shutter.classList.add('recording');
   recTimerEl.classList.add('recording');recTimerEl.style.display='block';startRecTimer();
+  document.getElementById('app').classList.add('recording-active');
+  closeAllMenus();
 }
 function stopRecording(){
   if(!state.isRecording||!state.mediaRecorder) return;
   state.mediaRecorder.stop();state.isRecording=false;
   shutter.classList.remove('recording');
   recTimerEl.classList.remove('recording');recTimerEl.style.display='none';stopRecTimer();
+  document.getElementById('app').classList.remove('recording-active');
 }
 let recInterval=null,recSeconds=0;
 function startRecTimer(){
@@ -771,6 +813,15 @@ zoomSlider.addEventListener('input',()=>{
   state.zoom=parseFloat(zoomSlider.value);
   if(state.zoom<=1.05){state.panX=0;state.panY=0}
   clampPan();applyVideoTransform();
+  const zl=document.getElementById('zoom-label');
+  if(zl){
+    if(state.zoom<=1.05){ zl.style.display='none'; }
+    else {
+      zl.style.display='block';
+      const z = state.zoom;
+      zl.textContent = (Math.abs(z - Math.round(z)) < 0.05 ? Math.round(z) : z.toFixed(1).replace('.',',')) + 'x';
+    }
+  }
 });
 
 // Pan
@@ -804,9 +855,10 @@ flashBtn.addEventListener('click',()=>{
   if(state.flashOn) showToast('Hãy bật độ sáng tối đa để có hiệu quả tốt nhất');
 });
 colorBtn.addEventListener('click',e=>{
-  e.stopPropagation();closeAllMenus();
-  placePopup(colorPalette,colorBtn);
-  colorPalette.classList.toggle('show');
+  e.stopPropagation();
+  const open = colorPalette.classList.contains('show');
+  closeAllMenus();
+  if(!open){ placePopup(colorPalette,colorBtn); colorPalette.classList.add('show'); }
 });
 document.querySelectorAll('.color-swatch').forEach(sw=>{
   sw.addEventListener('click',()=>{
@@ -821,9 +873,10 @@ document.querySelectorAll('.color-swatch').forEach(sw=>{
 
 // Timer (làm lại từ đầu)
 timerBtn.addEventListener('click',e=>{
-  e.stopPropagation();closeAllMenus();
-  placePopup(timerMenu,timerBtn);
-  timerMenu.classList.toggle('show');
+  e.stopPropagation();
+  const open = timerMenu.classList.contains('show');
+  closeAllMenus();
+  if(!open){ placePopup(timerMenu,timerBtn); timerMenu.classList.add('show'); }
 });
 document.querySelectorAll('.timer-opt').forEach(opt=>{
   opt.addEventListener('click',()=>{
