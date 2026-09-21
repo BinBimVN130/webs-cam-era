@@ -99,6 +99,11 @@
     .ctrl-btn:active{transform:scale(.9)}
     .ctrl-btn.active{background:#fff;color:#000}
     .ctrl-btn svg{width:18px;height:18px}
+    .ctrl-btn .icon-reset{display:none}
+    .ctrl-btn.is-modified .icon-default{display:none}
+    .ctrl-btn.is-modified .icon-reset{display:block}
+    .ctrl-btn.is-modified{background:#fff;color:#000}
+
     .flash-group .ctrl-btn{background:transparent}
     .flash-group .ctrl-btn.active{background:#fff;color:#000}
 
@@ -150,20 +155,29 @@
     /* EV / Sat / Temp popup */
     .adj-popup{
       display:none;position:fixed;z-index:60;
-      background:rgba(28,28,30,.95);border-radius:20px;padding:10px 14px;
-      box-shadow:0 8px 28px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.1);
-      align-items:center;gap:10px;min-width:180px;
+      background:rgba(30,30,32,.96);border-radius:22px;padding:12px 16px 14px;
+      box-shadow:0 8px 28px rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.08);
+      flex-direction:column;gap:10px;min-width:200px;
     }
     .adj-popup.show{display:flex}
-    .adj-popup .label{font-size:12px;color:rgba(255,255,255,.7);white-space:nowrap}
-    .adj-popup .icon-l,.adj-popup .icon-r{font-size:14px;opacity:.9;flex-shrink:0}
+    .adj-popup .row-top{
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+    }
+    .adj-popup .label{
+      font-size:13px;font-weight:500;color:rgba(255,255,255,.9);white-space:nowrap;
+      flex:1;text-align:center;
+    }
+    .adj-popup .icon-l,.adj-popup .icon-r{
+      width:18px;height:18px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+      font-size:15px;line-height:1;
+    }
     .adj-popup input[type=range]{
-      flex:1;-webkit-appearance:none;appearance:none;height:4px;
-      background:rgba(255,255,255,.25);border-radius:2px;outline:none;
+      width:100%;-webkit-appearance:none;appearance:none;height:3px;
+      background:rgba(255,255,255,.22);border-radius:2px;outline:none;margin:0;
     }
     .adj-popup input[type=range]::-webkit-slider-thumb{
-      -webkit-appearance:none;width:18px;height:18px;border-radius:50%;
-      background:#fff;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.4);
+      -webkit-appearance:none;width:20px;height:20px;border-radius:50%;
+      background:#fff;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.35);
     }
 
     #toast{
@@ -288,20 +302,29 @@
     <button class="ctrl-btn" id="aspect-btn" title="Tỷ lệ">16:9</button>
 
     <button class="ctrl-btn" id="ev-btn" title="EV">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg class="icon-default" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+      </svg>
+      <svg class="icon-reset" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
+        <path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
       </svg>
     </button>
 
     <button class="ctrl-btn" id="sat-btn" title="Độ bão hòa">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg class="icon-default" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18" fill="currentColor" opacity=".35"/>
+      </svg>
+      <svg class="icon-reset" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
+        <path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
       </svg>
     </button>
 
     <button class="ctrl-btn" id="temp-btn" title="Nhiệt độ">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg class="icon-default" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/>
+      </svg>
+      <svg class="icon-reset" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
+        <path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
       </svg>
     </button>
   </div>
@@ -326,21 +349,30 @@
   </div>
 
   <div class="adj-popup" id="ev-popup">
-    <span class="icon-l">☀</span>
+    <div class="row-top">
+      <span class="icon-l">☀</span>
+      <span class="label">EV</span>
+      <span class="icon-r">☾</span>
+    </div>
     <input type="range" id="ev-slider" min="-2" max="2" step="0.05" value="0">
-    <span class="icon-r">☾</span>
   </div>
 
   <div class="adj-popup" id="sat-popup">
-    <span class="label">Độ bão hòa</span>
+    <div class="row-top">
+      <span class="icon-l" style="opacity:.5">○</span>
+      <span class="label">Độ bão hòa</span>
+      <span class="icon-r">●</span>
+    </div>
     <input type="range" id="sat-slider" min="0" max="2" step="0.05" value="1">
   </div>
 
   <div class="adj-popup" id="temp-popup">
-    <span class="icon-l" style="color:#5ac8fa">●</span>
-    <span class="label">Nhiệt độ</span>
+    <div class="row-top">
+      <span class="icon-l" style="color:#5ac8fa">●</span>
+      <span class="label">Nhiệt độ</span>
+      <span class="icon-r" style="color:#ff9500">●</span>
+    </div>
     <input type="range" id="temp-slider" min="-1" max="1" step="0.05" value="0">
-    <span class="icon-r" style="color:#ff9500">●</span>
   </div>
 
   <!-- Right -->
@@ -462,11 +494,8 @@ function placePopup(el, btn){
 }
 
 function applyFilters(){
-  // EV mạnh: -2 → brightness 0.25, +2 → brightness 2.5
   const br = 1 + state.ev * 0.75;
-  // Sat: 0 = xám, 1 = bình thường, 2 = cực đậm
   const sat = state.sat;
-  // Temp: -1 lạnh (blue), +1 ấm (orange) via hue-rotate + sepia trick
   let filter = `brightness(${br}) saturate(${sat})`;
   if(state.temp > 0.02){
     filter += ` sepia(${state.temp*0.55}) saturate(${1+state.temp*0.3})`;
@@ -474,6 +503,10 @@ function applyFilters(){
     filter += ` hue-rotate(${state.temp*35}deg) saturate(${1-state.temp*0.15})`;
   }
   video.style.filter = filter;
+  // Toggle reset icon
+  evBtn.classList.toggle('is-modified', Math.abs(state.ev) > 0.02);
+  satBtn.classList.toggle('is-modified', Math.abs(state.sat - 1) > 0.02);
+  tempBtn.classList.toggle('is-modified', Math.abs(state.temp) > 0.02);
 }
 
 function applyVideoTransform(){
@@ -545,16 +578,30 @@ async function startCamera(withAudio=false){
 
 function startFpsCounter(){
   state.frameCount=0;state.lastFpsTime=performance.now();
-  const tick=()=>{
-    state.frameCount++;
-    const now=performance.now();
-    if(now-state.lastFpsTime>=1000){
-      fpsEl.textContent='FPS: '+state.frameCount;
-      state.frameCount=0;state.lastFpsTime=now;
-    }
-    requestAnimationFrame(tick);
-  };
-  requestAnimationFrame(tick);
+  // Ưu tiên đếm frame thật từ camera
+  if(typeof video.requestVideoFrameCallback === 'function'){
+    const onFrame = () => {
+      state.frameCount++;
+      const now=performance.now();
+      if(now-state.lastFpsTime>=1000){
+        fpsEl.textContent='FPS: '+state.frameCount;
+        state.frameCount=0;state.lastFpsTime=now;
+      }
+      video.requestVideoFrameCallback(onFrame);
+    };
+    video.requestVideoFrameCallback(onFrame);
+  } else {
+    // Fallback: lấy frameRate từ track
+    const updateFromTrack = () => {
+      try{
+        const track = state.stream?.getVideoTracks()?.[0];
+        const fr = track?.getSettings?.()?.frameRate;
+        if(fr) fpsEl.textContent='FPS: '+Math.round(fr);
+      }catch(e){}
+      setTimeout(updateFromTrack, 1000);
+    };
+    updateFromTrack();
+  }
 }
 
 function drawToCanvas(targetCtx,tw,th){
@@ -789,7 +836,14 @@ aspectBtn.addEventListener('click',()=>{
 
 // EV
 evBtn.addEventListener('click',e=>{
-  e.stopPropagation();closeAllMenus();
+  e.stopPropagation();
+  if(evBtn.classList.contains('is-modified') && !evPopup.classList.contains('show')){
+    // Reset
+    state.ev=0;evSlider.value=0;applyFilters();closeAllMenus();
+    showToast('Đã reset EV');
+    return;
+  }
+  closeAllMenus();
   placePopup(evPopup,evBtn);
   evPopup.classList.toggle('show');
 });
@@ -800,7 +854,13 @@ evSlider.addEventListener('input',()=>{
 
 // Saturation
 satBtn.addEventListener('click',e=>{
-  e.stopPropagation();closeAllMenus();
+  e.stopPropagation();
+  if(satBtn.classList.contains('is-modified') && !satPopup.classList.contains('show')){
+    state.sat=1;satSlider.value=1;applyFilters();closeAllMenus();
+    showToast('Đã reset Độ bão hòa');
+    return;
+  }
+  closeAllMenus();
   placePopup(satPopup,satBtn);
   satPopup.classList.toggle('show');
 });
@@ -811,7 +871,13 @@ satSlider.addEventListener('input',()=>{
 
 // Temperature
 tempBtn.addEventListener('click',e=>{
-  e.stopPropagation();closeAllMenus();
+  e.stopPropagation();
+  if(tempBtn.classList.contains('is-modified') && !tempPopup.classList.contains('show')){
+    state.temp=0;tempSlider.value=0;applyFilters();closeAllMenus();
+    showToast('Đã reset Nhiệt độ');
+    return;
+  }
+  closeAllMenus();
   placePopup(tempPopup,tempBtn);
   tempPopup.classList.toggle('show');
 });
