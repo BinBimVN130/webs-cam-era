@@ -12,9 +12,11 @@
 
     #fps{
       position:fixed;top:10px;left:12px;z-index:40;
-      font-size:11px;font-weight:500;color:rgba(255,255,255,.45);
-      letter-spacing:.3px;pointer-events:none;
+      font-size:11px;font-weight:400;color:rgba(255,255,255,.45);
+      letter-spacing:.2px;pointer-events:none;
+      font-family:inherit;
     }
+    #fps .ver{opacity:.7;font-weight:400}
 
     #stage{
       position:relative;
@@ -102,9 +104,12 @@
       width:20px;height:1px;background:rgba(255,255,255,.22);margin:2px 0;border:none;flex-shrink:0;
     }
     #reset-btn{
-      position:absolute;left:12px;
-      top:calc(50% + 200px);
+      position:absolute;
+      left:50%;
+      transform:translateX(-50%);
+      top:calc(100% + 14px);
       z-index:30;
+      /* neo theo cột left-controls → luôn thẳng hàng */
     }
     .flash-group{
       display:flex;flex-direction:column;align-items:center;
@@ -301,7 +306,7 @@
     @media(max-width:600px){
       #stage{width:min(calc(100vw - 130px),calc(86vh * 16 / 9));height:min(calc((100vw - 130px)*9/16),86vh)}
       .left-controls{left:6px}.right-controls{right:6px}
-      #reset-btn{left:6px;top:calc(50% + 180px)}
+      #reset-btn{/* kế thừa left-controls */}
       #shutter{width:56px;height:56px}
       .zoom-control{right:10px;height:130px}
       .zoom-slider{height:100px}
@@ -310,7 +315,7 @@
 </head>
 <body>
 <div id="app">
-  <div id="fps">FPS: --</div>
+  <div id="fps">FPS: -- <span class="ver">| v1.0.0</span></div>
 
   <div id="stage">
     <div id="camera-frame">
@@ -374,14 +379,12 @@
       </svg>
     </button>
 
+    <button class="ctrl-btn" id="reset-btn" title="Reset" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+      </svg>
+    </button>
   </div>
-
-  <!-- Reset tách riêng, không ảnh hưởng layout cột nút -->
-  <button class="ctrl-btn" id="reset-btn" title="Reset" style="display:none">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
-    </svg>
-  </button>
 
   <!-- Popups -->
   <div id="color-palette">
@@ -560,9 +563,13 @@ function applyFilters(){
   const sat = state.sat;
   let filter = `brightness(${br}) saturate(${sat})`;
   if(state.temp > 0.02){
-    filter += ` sepia(${state.temp*0.55}) saturate(${1+state.temp*0.3})`;
+    // Ấm: vàng/cam (sepia)
+    const t = state.temp;
+    filter += ` sepia(${t*0.5}) saturate(${1+t*0.35}) hue-rotate(${-t*8}deg)`;
   }else if(state.temp < -0.02){
-    filter += ` hue-rotate(${state.temp*35}deg) saturate(${1-state.temp*0.15})`;
+    // Lạnh: xanh/cyan — KHÔNG dùng hue-rotate âm (gây tím trên da)
+    const t = -state.temp; // 0..1
+    filter += ` sepia(${t*0.35}) hue-rotate(${175+t*25}deg) saturate(${1+t*0.25}) brightness(${1+t*0.03})`;
   }
   video.style.filter = filter;
   const evMod = Math.abs(state.ev) > 0.02;
@@ -690,7 +697,7 @@ function startFpsCounter(){
       }
       const now = performance.now();
       if(now - state.lastFpsTime >= 1000){
-        fpsEl.textContent = 'FPS: ' + state.frameCount;
+        fpsEl.innerHTML = 'FPS: ' + state.frameCount + ' <span class="ver">| v1.0.0</span>';
         state.frameCount = 0;
         state.lastFpsTime = now;
       }
@@ -703,7 +710,7 @@ function startFpsCounter(){
       try{
         const track = state.stream?.getVideoTracks()?.[0];
         const fr = track?.getSettings?.()?.frameRate;
-        if(fr) fpsEl.textContent = 'FPS: ' + Math.round(fr);
+        if(fr) fpsEl.innerHTML = 'FPS: ' + Math.round(fr) + ' <span class="ver">| v1.0.0</span>';
       }catch(e){}
       setTimeout(updateFromTrack, 1000);
     };
