@@ -563,13 +563,9 @@ function applyFilters(){
   const sat = state.sat;
   let filter = `brightness(${br}) saturate(${sat})`;
   if(state.temp > 0.02){
-    // Ấm: vàng/cam (sepia)
-    const t = state.temp;
-    filter += ` sepia(${t*0.5}) saturate(${1+t*0.35}) hue-rotate(${-t*8}deg)`;
+    filter += ` sepia(${state.temp*0.55}) saturate(${1+state.temp*0.3})`;
   }else if(state.temp < -0.02){
-    // Lạnh: xanh/cyan — KHÔNG dùng hue-rotate âm (gây tím trên da)
-    const t = -state.temp; // 0..1
-    filter += ` sepia(${t*0.35}) hue-rotate(${175+t*25}deg) saturate(${1+t*0.25}) brightness(${1+t*0.03})`;
+    filter += ` hue-rotate(${state.temp*35}deg) saturate(${1-state.temp*0.15})`;
   }
   video.style.filter = filter;
   const evMod = Math.abs(state.ev) > 0.02;
