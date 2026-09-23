@@ -134,14 +134,14 @@
       transition:transform .12s,background .15s,color .15s;position:relative;
     }
     .ctrl-btn:active{transform:scale(.9)}
-    .ctrl-btn.active{background:#fff;color:#000}
+    .ctrl-btn.active{background:#ffaa00;color:#000}
     .ctrl-btn svg{width:18px;height:18px}
     .filter-btn-lg{width:46px;height:46px}
     .filter-btn-lg svg{width:26px;height:26px}
-    .ctrl-btn.is-modified{background:#fff;color:#000}
+    .ctrl-btn.is-modified{background:#ffaa00;color:#000}
 
     .flash-group .ctrl-btn{background:transparent}
-    .flash-group .ctrl-btn.active{background:#fff;color:#000}
+    .flash-group .ctrl-btn.active{background:#ffaa00;color:#000}
 
     #color-btn .dot{
       width:18px;height:18px;border-radius:50%;background:#fff;
@@ -149,7 +149,7 @@
     }
     #aspect-btn{
       width:40px;height:40px;border-radius:50%;
-      font-size:11px;font-weight:800;letter-spacing:-.3px;
+      font-size:11px;font-weight:600;letter-spacing:-.2px;
       background:rgba(40,40,42,.92);
     }
 
@@ -163,12 +163,16 @@
     .popup-menu.show{display:block}
 
     #color-palette{
-      display:none;position:fixed;z-index:60;flex-direction:column;gap:12px;
+      display:flex;position:fixed;z-index:60;flex-direction:column;gap:12px;
       background:rgba(28,28,30,.96);border-radius:18px;padding:14px 16px 16px;
       box-shadow:0 8px 28px rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.1);
       min-width:160px;
+      opacity:0;visibility:hidden;pointer-events:none;
+      transition:opacity .2s ease, visibility .2s, transform .2s ease;
     }
-    #color-palette.show{display:flex}
+    #color-palette.show{
+      opacity:1;visibility:visible;pointer-events:auto;
+    }
     .panel-head{
       display:flex;align-items:center;justify-content:space-between;
       font-size:15px;font-weight:600;color:#fff;padding:0 2px 2px;
@@ -190,12 +194,16 @@
 
     /* Bộ lọc panel */
     #filter-panel{
-      display:none;position:fixed;z-index:60;flex-direction:column;gap:12px;
+      display:flex;position:fixed;z-index:60;flex-direction:column;gap:12px;
       background:rgba(28,28,30,.96);border-radius:18px;padding:14px 16px 16px;
       box-shadow:0 8px 28px rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.1);
       width:176px;
+      opacity:0;visibility:hidden;pointer-events:none;
+      transition:opacity .2s ease, visibility .2s, transform .2s ease;
     }
-    #filter-panel.show{display:flex}
+    #filter-panel.show{
+      opacity:1;visibility:visible;pointer-events:auto;
+    }
     .filter-grid{
       display:grid;grid-template-columns:repeat(2,1fr);gap:12px 10px;
     }
@@ -211,17 +219,22 @@
     .filter-item .fname{font-size:11px;color:rgba(255,255,255,.75);font-weight:500}
 
     #timer-menu{
-      display:none;position:fixed;z-index:60;
-      background:rgba(28,28,30,.95);border-radius:12px;padding:6px;
-      flex-direction:column;gap:2px;min-width:72px;
-      box-shadow:0 8px 28px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.1);
+      display:flex;position:fixed;z-index:60;
+      background:rgba(28,28,30,.96);border-radius:18px;padding:10px 8px;
+      flex-direction:column;gap:2px;min-width:88px;
+      box-shadow:0 8px 28px rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.1);
+      opacity:0;visibility:hidden;pointer-events:none;
+      transition:opacity .2s ease, visibility .2s, transform .2s ease;
     }
-    #timer-menu.show{display:flex}
+    #timer-menu.show{
+      opacity:1;visibility:visible;pointer-events:auto;
+    }
     .timer-opt{
       padding:9px 14px;border:none;background:transparent;color:#fff;
       font-size:14px;border-radius:8px;cursor:pointer;text-align:center;white-space:nowrap;
     }
-    .timer-opt:hover,.timer-opt.active{background:rgba(255,255,255,.14)}
+    .timer-opt:hover{background:rgba(255,255,255,.14)}
+    .timer-opt.active{background:#ffaa00;color:#000;font-weight:600}
 
     /* EV / Sat / Temp popup */
     .adj-popup{
@@ -252,11 +265,12 @@
     }
 
     #toast{
-      position:fixed;top:18px;left:50%;transform:translateX(-50%) translateY(-12px);
-      background:rgba(40,40,42,.95);color:#fff;padding:10px 16px;border-radius:11px;
-      font-size:14px;z-index:300;opacity:0;transition:all .25s;pointer-events:none;max-width:88%;text-align:center;
+      position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.96);
+      background:rgba(28,28,30,.88);color:#fff;padding:12px 20px;border-radius:14px;
+      font-size:14px;z-index:300;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;max-width:88%;text-align:center;
+      box-shadow:0 8px 28px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.1);
     }
-    #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    #toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
 
     /* Right */
     .right-controls{
@@ -271,7 +285,7 @@
       width:38px;height:38px;border-radius:50%;border:none;background:transparent;color:#aaa;
       display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;
     }
-    .mode-btn.active{background:#fff;color:#000}
+    .mode-btn.active{background:#ffaa00;color:#000}
     .mode-btn svg{width:18px;height:18px}
 
     #shutter{
@@ -335,7 +349,7 @@
       display:flex;align-items:center;justify-content:center;cursor:pointer;
     }
     .flip-btn svg{width:16px;height:16px}
-    .flip-btn.active{background:#0a84ff;color:#fff}
+    .flip-btn.active{background:#ffaa00;color:#000}
 
     #qr-popup{
       position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;
@@ -408,10 +422,9 @@
   <div class="left-controls">
         <button class="ctrl-btn filter-btn-lg" id="filter-btn" title="Bộ lọc">
       <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-        <!-- 3 vòng tròn chồng, tam giác đều, mờ như ảnh -->
-        <circle cx="18" cy="20" r="11" fill="#ffffff" fill-opacity="0.42"/>
-        <circle cx="30" cy="20" r="11" fill="#ffffff" fill-opacity="0.42"/>
-        <circle cx="24" cy="29" r="11" fill="#ffffff" fill-opacity="0.42"/>
+        <circle cx="18" cy="20" r="11" fill="currentColor" fill-opacity="0.55"/>
+        <circle cx="30" cy="20" r="11" fill="currentColor" fill-opacity="0.55"/>
+        <circle cx="24" cy="29" r="11" fill="currentColor" fill-opacity="0.55"/>
       </svg>
     </button>
     <div class="flash-group">
@@ -422,7 +435,11 @@
     </div>
 
     <button class="ctrl-btn" id="timer-btn" title="Hẹn giờ">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M8 3.5h8" stroke-width="2.4"/>
+        <circle cx="12" cy="13.5" r="7.2"/>
+        <path d="M12 9.5v4.2l2.8 1.6"/>
+      </svg>
     </button>
 
     <button class="ctrl-btn" id="aspect-btn" title="Tỷ lệ">16:9</button>
@@ -562,6 +579,11 @@
     </button>
     <button class="flip-btn" id="flip-h" title="Lật ngang">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4"/></svg>
+    </button>
+    <button class="flip-btn" id="fs-btn" title="Toàn màn hình">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/>
+      </svg>
     </button>
   </div>
 
@@ -763,7 +785,9 @@ function downloadBlob(blob,name){
 }
 function adjustAspectRatio(){
   const sw=stage.clientWidth,sh=stage.clientHeight;
-  const ratio=state.forceAspect==='4:3'?4/3:16/9;
+  let ratio=16/9;
+  if(state.forceAspect==='4:3') ratio=4/3;
+  else if(state.forceAspect==='1:1') ratio=1;
   const sr=sw/sh;
   let fw,fh;
   if(ratio>sr){fw=sw;fh=sw/ratio}else{fh=sh;fw=sh*ratio}
@@ -1105,6 +1129,8 @@ async function setMode(mode){
     }
   }
   updateShutterColor();
+  const modeNames={photo:'Chụp ảnh',video:'Quay',qr:'Quét QR'};
+  if(modeNames[mode]) showToast(modeNames[mode]);
   requestAnimationFrame(() => {
     setTimeout(() => cameraFrame.classList.remove('mode-switching'), 80);
   });
@@ -1183,7 +1209,10 @@ flashBtn.addEventListener('click',()=>{
   state.flashOn=!state.flashOn;
   flashBtn.classList.toggle('active',state.flashOn);
   updateBackground();
-  if(state.flashOn) showToast('Hãy bật độ sáng tối đa để có hiệu quả tốt nhất');
+  if(state.flashOn && !sessionStorage.getItem('flashTipShown')){
+    sessionStorage.setItem('flashTipShown','1');
+    showToast('Bật độ sáng tối đa và toàn màn hình để có hiệu quả tốt nhất');
+  }
 });
 colorBtn.addEventListener('click',e=>{
   e.stopPropagation();
@@ -1198,7 +1227,6 @@ document.querySelectorAll('.color-swatch').forEach(sw=>{
     state.flashColor=sw.dataset.color;
     colorDot.style.background=state.flashColor;
     updateBackground();
-    colorPalette.classList.remove('show');
   });
 });
 
@@ -1222,10 +1250,11 @@ document.querySelectorAll('.timer-opt').forEach(opt=>{
 
 // Aspect
 aspectBtn.addEventListener('click',()=>{
-  state.forceAspect=state.forceAspect==='16:9'?'4:3':'16:9';
+  const order=['16:9','4:3','1:1'];
+  const i=(order.indexOf(state.forceAspect)+1)%order.length;
+  state.forceAspect=order[i];
   aspectBtn.textContent=state.forceAspect;
   adjustAspectRatio();
-  showToast('Tỷ lệ: '+state.forceAspect);
 });
 
 // EV
@@ -1281,6 +1310,34 @@ document.getElementById('reset-btn').addEventListener('click', e => {
 flipVBtn.addEventListener('click',()=>{state.flipV=!state.flipV;applyVideoTransform()});
 flipHBtn.addEventListener('click',()=>{state.flipH=!state.flipH;applyVideoTransform()});
 
+// Fullscreen
+const fsBtn = document.getElementById('fs-btn');
+function isFs(){ return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+function updateFsIcon(){
+  if(!fsBtn) return;
+  fsBtn.classList.toggle('active', isFs());
+  fsBtn.innerHTML = isFs()
+    ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg>`
+    : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></svg>`;
+}
+if(fsBtn){
+  fsBtn.addEventListener('click', async ()=>{
+    try{
+      if(!isFs()){
+        const el = document.documentElement;
+        if(el.requestFullscreen) await el.requestFullscreen();
+        else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      } else {
+        if(document.exitFullscreen) await document.exitFullscreen();
+        else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
+      }
+    }catch(e){ showToast('Không thể toàn màn hình'); }
+  });
+  document.addEventListener('fullscreenchange', updateFsIcon);
+  document.addEventListener('webkitfullscreenchange', updateFsIcon);
+}
+
+
 document.getElementById('qr-close').addEventListener('click',()=>{
   qrPopup.classList.remove('show');
   if(state.mode==='qr') startQRScan();
@@ -1307,7 +1364,6 @@ if(filterBtn && filterPanel){
       it.classList.add('selected');
       state.filter = it.dataset.filter || 'none';
       applyFilters();
-      filterPanel.classList.remove('show');
     });
   });
 }
