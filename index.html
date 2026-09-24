@@ -232,6 +232,20 @@
     .settings-row:last-child{border-bottom:none}
     .settings-row .lab{font-size:14px;font-weight:500}
     .settings-row .hint{font-size:12px;color:rgba(255,255,255,.45);margin-top:4px}
+    .settings-section-label{
+      font-size:12px;font-weight:500;color:rgba(255,255,255,.45);
+      padding:16px 0 6px;letter-spacing:.02em;
+    }
+    .about-links{display:flex;flex-direction:column;gap:10px;width:100%;max-width:280px;margin-top:8px}
+    .about-link{
+      display:flex;align-items:center;gap:12px;padding:12px 14px;
+      border-radius:12px;border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.06);color:#fff;text-decoration:none;
+      font-size:14px;font-weight:500;transition:background .15s;
+    }
+    .about-link:hover{background:rgba(255,255,255,.12)}
+    .about-link svg{width:22px;height:22px;flex-shrink:0}
+    .about-link.disabled{opacity:.45;pointer-events:none;cursor:default}
     .settings-row select{
       min-width:140px;padding:8px 12px;border-radius:10px;
       border:1px solid rgba(255,255,255,.15);
@@ -487,11 +501,9 @@
     /* Khi đang quay: ẩn hết trừ nút dừng */
     .recording-active .left-controls,
     .recording-active #reset-btn,
-    .recording-active .zoom-control,
     .recording-active .mode-switcher,
     .recording-active .flip-btn,
     .recording-active #fps,
-    .recording-active #zoom-label,
     .recording-active #qr-hint,
     .recording-active #color-palette,
     .recording-active #timer-menu,
@@ -522,18 +534,11 @@
       background:#34c759;transition:width .06s linear,background-color .12s linear;
     }
     
-    #rec-pause-btn{
-      display:none;width:40px;height:40px;border-radius:50%;border:none;
-      background:rgba(255,255,255,.12);color:#fff;cursor:pointer;
-      align-items:center;justify-content:center;
-      border:1px solid rgba(255,255,255,.15);
-      box-shadow:0 2px 8px rgba(0,0,0,.25);
-    }
-    #rec-pause-btn svg{width:18px;height:18px}
-    .recording-active #rec-pause-btn{display:flex}
-    .recording-active.no-rec-pause #rec-pause-btn{display:none !important}
-    #rec-pause-btn.paused{background:#ffaa00;color:#000;border-color:#ffaa00}
 
+    .recording-active .zoom-control,
+    .recording-active #zoom-label{
+      display:flex !important;visibility:visible !important;pointer-events:auto !important;opacity:1 !important;
+    }
     .recording-active #shutter{visibility:visible !important;pointer-events:auto !important}
     .recording-active #mic-meter{display:flex !important;visibility:visible !important}
 
@@ -576,7 +581,7 @@
 <svg id="svg-filters" width="0" height="0" style="position:absolute">
   <defs>
     <filter id="sharpen" color-interpolation-filters="sRGB">
-      <feConvolveMatrix order="3" kernelMatrix="0 -1 0 -1 5 -1 0 -1 0" preserveAlpha="true"/>
+      <feConvolveMatrix order="3" kernelMatrix="0 -1 0 -1 6 -1 0 -1 0" preserveAlpha="true"/>
     </filter>
   </defs>
 </svg>
@@ -783,10 +788,6 @@
       </button>
     </div>
     <button id="shutter"></button>
-    <button type="button" id="rec-pause-btn" title="Tạm dừng" aria-label="Tạm dừng">
-      <svg class="icon-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
-      <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M8 5v14l11-7z"/></svg>
-    </button>
     <button class="flip-btn" id="flip-v" title="Lật đứng">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M8 7l4-4 4 4M8 17l4 4 4-4"/></svg>
     </button>
@@ -878,6 +879,29 @@
               <option value="">Mặc định</option>
             </select>
           </div>
+          <div class="settings-section-label">Định dạng</div>
+          <div class="settings-row">
+            <div>
+              <div class="lab">Định dạng ảnh</div>
+              <div class="hint">AVIF/WebP nhẹ hơn; không hỗ trợ sẽ dùng PNG</div>
+            </div>
+            <select id="set-photo-fmt">
+              <option value="png">PNG</option>
+              <option value="webp">WebP</option>
+              <option value="avif">AVIF</option>
+            </select>
+          </div>
+          <div class="settings-row">
+            <div>
+              <div class="lab">Định dạng video</div>
+              <div class="hint">Tùy trình duyệt; ưu tiên lựa chọn của bạn</div>
+            </div>
+            <select id="set-video-fmt">
+              <option value="auto">Tự động</option>
+              <option value="webm">WebM</option>
+              <option value="mp4">MP4</option>
+            </select>
+          </div>
         </div>
         <div class="settings-panel" id="panel-camera">
           <div class="settings-row">
@@ -912,8 +936,19 @@
             </svg>
             <div style="font-size:18px;font-weight:600">web-cam-era</div>
             <div style="font-size:13px;color:rgba(255,255,255,.5)">Phiên bản 1.1.0</div>
-            <div style="font-size:13px;color:rgba(255,255,255,.7);line-height:1.5;max-width:320px;margin-top:4px">
-              Ứng dụng camera trên trình duyệt: chụp ảnh, quay video và quét mã QR — chạy hoàn toàn trên máy bạn.
+            <div class="about-links">
+              <a class="about-link" href="https://binbimvn130.github.io/webs-cam-era/" target="_blank" rel="noopener noreferrer">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.21 11.39.6.11.82-.26.82-.58 0-.29-.01-1.04-.02-2.05-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.33-1.76-1.33-1.76-1.09-.74.08-.73.08-.73 1.2.09 1.84 1.24 1.84 1.24 1.07 1.84 2.81 1.31 3.5 1 .11-.78.42-1.31.76-1.61-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.29-1.55 3.3-1.23 3.3-1.23.66 1.66.24 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.62-5.48 5.92.43.37.81 1.1.81 2.22 0 1.61-.01 2.9-.01 3.29 0 .32.22.7.83.58C20.57 21.8 24 17.3 24 12 24 5.37 18.63 0 12 0z"/></svg>
+                GitHub
+              </a>
+              <a class="about-link disabled" href="#" title="Sắp có" aria-disabled="true">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.53.02C13.84 0 15.14.01 16.44 0c.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.89-.5-4.14-1.19v9.62c0 2.13-.86 4.06-2.33 5.4a7.35 7.35 0 0 1-5.4 2.17c-2.13 0-4.06-.86-5.4-2.33A7.35 7.35 0 0 1 2.82 18.2c0-2.13.86-4.06 2.33-5.4a7.35 7.35 0 0 1 4.14-2.14v4.15a3.3 3.3 0 0 0-1.66.69 3.25 3.25 0 0 0-1.15 2.55c0 .97.39 1.85 1.02 2.48a3.5 3.5 0 0 0 2.48 1.02c.97 0 1.85-.39 2.48-1.02a3.5 3.5 0 0 0 1.02-2.48V.02h.05z"/></svg>
+                TikTok
+              </a>
+              <a class="about-link disabled" href="#" title="Sắp có" aria-disabled="true">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 6.19a3.02 3.02 0 0 0-2.12-2.14C19.54 3.5 12 3.5 12 3.5s-7.54 0-9.38.55A3.02 3.02 0 0 0 .5 6.19 31.6 31.6 0 0 0 0 12a31.6 31.6 0 0 0 .5 5.81 3.02 3.02 0 0 0 2.12 2.14c1.84.55 9.38.55 9.38.55s7.54 0 9.38-.55a3.02 3.02 0 0 0 2.12-2.14A31.6 31.6 0 0 0 24 12a31.6 31.6 0 0 0-.5-5.81zM9.75 15.02V8.98L15.5 12l-5.75 3.02z"/></svg>
+                YouTube
+              </a>
             </div>
           </div>
         </div>
@@ -963,9 +998,9 @@
 
 <script>
 const state = {
-  stream:null, mode:'photo', isRecording:false, isRecPaused:false, mediaRecorder:null, recordedChunks:[],
+  stream:null, mode:'photo', isRecording:false, mediaRecorder:null, recordedChunks:[],
   flipH:false, flipV:false, flashOn:false, flashColor:'#ffffff',
-  timerSec:0, isCounting:false, facingMode:'user', videoDeviceId:null, audioDeviceId:null, forceAspect:'16:9', previewRes:'1280x720', captureRes:'1280x720', previewFps:30, micGain:1,
+  timerSec:0, isCounting:false, facingMode:'user', videoDeviceId:null, audioDeviceId:null, forceAspect:'16:9', previewRes:'1280x720', captureRes:'1280x720', previewFps:30, micGain:1, photoFmt:'png', videoFmt:'auto',
   recAnimId:null, qrScanning:false, qrAnimId:null,
   zoom:1, panX:0, panY:0, isPanning:false,
   panStartX:0, panStartY:0, panOriginX:0, panOriginY:0,
@@ -1070,14 +1105,15 @@ function placePopup(el, btn, align){
 }
 
 function filterCssExtra(){
+  // Preview: chỉ CSS nhẹ (không SVG convolve) để giữ FPS
   switch(state.filter){
-    case 'vivid': return ' saturate(1.85) contrast(1.12)';
-    case 'fresh': return ' saturate(1.45) hue-rotate(18deg) brightness(1.06)';
-    case 'natural': return ' contrast(1.08) saturate(1.15)';
-    case 'dawn': return ' sepia(0.4) saturate(1.35) hue-rotate(-12deg) brightness(1.05)';
-    case 'vintage': return ' sepia(0.6) contrast(0.95) brightness(0.96) saturate(0.9)';
-    case 'sharp': return ' contrast(1.15) saturate(1.05)'; /* không dùng feConvolve realtime → tránh lag */
-    case 'mono': return ' grayscale(1) contrast(1.12)';
+    case 'vivid': return ' saturate(1.7) contrast(1.14) brightness(1.02)';
+    case 'fresh': return ' saturate(1.4) hue-rotate(12deg) brightness(1.05) contrast(1.04)';
+    case 'natural': return ' contrast(1.1) saturate(1.12) brightness(1.01)';
+    case 'dawn': return ' sepia(0.28) saturate(1.25) hue-rotate(-8deg) brightness(1.04)';
+    case 'vintage': return ' sepia(0.45) contrast(1.05) brightness(0.97) saturate(0.85)';
+    case 'sharp': return ' contrast(1.28) saturate(1.08) brightness(1.03)'; /* fog giảm; sắc nét canvas lúc chụp/quay */
+    case 'mono': return ' grayscale(1) contrast(1.18) brightness(1.02)';
     default: return '';
   }
 }
@@ -1145,6 +1181,39 @@ function updateShutterColor(){
     shutter.classList.add('dark-mode');
   else shutter.classList.remove('dark-mode');
 }
+
+function canvasSupportsType(type){
+  try{
+    const c = document.createElement('canvas');
+    c.width = 2; c.height = 2;
+    return c.toDataURL(type).indexOf('data:'+type) === 0;
+  }catch(e){ return false; }
+}
+function savePhotoFromCanvas(cvs){
+  const fmt = state.photoFmt || 'png';
+  const tryList = fmt === 'png' ? ['image/png']
+    : fmt === 'webp' ? ['image/webp','image/png']
+    : ['image/avif','image/webp','image/png'];
+  const quality = 0.92;
+  const tryNext = (i) => {
+    if(i >= tryList.length){ showToast('Không lưu được ảnh'); return; }
+    const type = tryList[i];
+    const ext = type === 'image/png' ? 'png' : (type === 'image/webp' ? 'webp' : 'avif');
+    if(type !== 'image/png' && !canvasSupportsType(type)){
+      tryNext(i+1); return;
+    }
+    try{
+      cvs.toBlob(b=>{
+        if(b && b.size > 0){
+          downloadBlob(b, `photo_${Date.now()}.${ext}`);
+          showToast('Đã lưu ảnh (.' + ext + ')');
+        } else tryNext(i+1);
+      }, type, type === 'image/png' ? undefined : quality);
+    }catch(e){ tryNext(i+1); }
+  };
+  tryNext(0);
+}
+
 function downloadBlob(blob,name){
   const u=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=u;a.download=name;document.body.appendChild(a);a.click();
@@ -1315,8 +1384,10 @@ function drawToCanvas(targetCtx,tw,th){
   targetCtx.translate(state.panX*scaleX/state.zoom, state.panY*scaleY/state.zoom);
   targetCtx.translate(-cx,-cy);
   let f = video.style.filter || 'none';
-  if(state.filter === 'sharp' && f.indexOf('url(#sharpen)') < 0){
-    f = (f === 'none' ? '' : f) + ' url(#sharpen)';
+  // Sắc nét thật chỉ lúc vẽ canvas (chụp/quay) — không đụng preview FPS
+  if(state.filter === 'sharp'){
+    if(f.indexOf('url(#sharpen)') < 0)
+      f = (f === 'none' || !f ? '' : f) + ' url(#sharpen)';
   }
   targetCtx.filter = f || 'none';
   targetCtx.drawImage(video,0,0,tw,th);
@@ -1407,7 +1478,8 @@ async function capturePhoto(){
     await new Promise(r=>setTimeout(r,2000));
     fullscreenFlash.style.opacity='0';
   }
-  canvas.toBlob(b=>{if(b){downloadBlob(b,`photo_${Date.now()}.png`);showToast('Đã lưu ảnh')}},'image/png',1);
+  savePhotoFromCanvas(canvas);
+
   restorePreviewResolution();
   if(enteredFs){
     try{
@@ -1469,13 +1541,33 @@ async function startRecording(){
     }
   }
   state.recordedChunks=[];
-  const mimeCandidates = [
-    'video/webm;codecs=vp9,opus',
-    'video/webm;codecs=vp8,opus',
-    'video/webm',
-    'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
-    'video/mp4'
-  ];
+  let mimeCandidates;
+  const vf = state.videoFmt || 'auto';
+  if(vf === 'mp4'){
+    mimeCandidates = [
+      'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+      'video/mp4',
+      'video/webm;codecs=vp9,opus',
+      'video/webm;codecs=vp8,opus',
+      'video/webm'
+    ];
+  } else if(vf === 'webm'){
+    mimeCandidates = [
+      'video/webm;codecs=vp9,opus',
+      'video/webm;codecs=vp8,opus',
+      'video/webm',
+      'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+      'video/mp4'
+    ];
+  } else {
+    mimeCandidates = [
+      'video/webm;codecs=vp9,opus',
+      'video/webm;codecs=vp8,opus',
+      'video/webm',
+      'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+      'video/mp4'
+    ];
+  }
   let mime = '';
   for(const t of mimeCandidates){
     if(MediaRecorder.isTypeSupported(t)){ mime = t; break; }
@@ -1519,25 +1611,18 @@ async function startRecording(){
   };
   state.mediaRecorder.start(200);
   state.isRecording=true;
-  state.isRecPaused=false;
-  shutter.classList.add('recording');
+    shutter.classList.add('recording');
   recTimerEl.classList.add('recording');recTimerEl.style.display='block';startRecTimer();
   document.getElementById('app').classList.add('recording-active');
-  if(recPauseBtn){
-    document.getElementById('app').classList.toggle('no-rec-pause', !supportsRecPause());
-    updateRecPauseUI();
-  }
   closeAllMenus();
 }
 function stopRecording(){
   if(!state.isRecording||!state.mediaRecorder) return;
   try{ state.mediaRecorder.stop(); }catch(e){}
   state.isRecording=false;
-  state.isRecPaused=false;
-  shutter.classList.remove('recording');
+    shutter.classList.remove('recording');
   recTimerEl.classList.remove('recording');recTimerEl.style.display='none';stopRecTimer();
   document.getElementById('app').classList.remove('recording-active');
-  if(recPauseBtn) updateRecPauseUI();
 }
 let recInterval=null,recSeconds=0;
 function startRecTimer(){
@@ -1552,80 +1637,6 @@ function startRecTimer(){
 }
 function stopRecTimer(){clearInterval(recInterval);recInterval=null}
 
-const recPauseBtn = document.getElementById('rec-pause-btn');
-function supportsRecPause(){
-  return !!(window.MediaRecorder && MediaRecorder.prototype.pause && MediaRecorder.prototype.resume);
-}
-function updateRecPauseUI(){
-  if(!recPauseBtn) return;
-  const paused = !!state.isRecPaused;
-  recPauseBtn.classList.toggle('paused', paused);
-  recPauseBtn.title = paused ? 'Tiếp tục' : 'Tạm dừng';
-  const ip = recPauseBtn.querySelector('.icon-pause');
-  const ir = recPauseBtn.querySelector('.icon-play');
-  if(ip) ip.style.display = paused ? 'none' : 'block';
-  if(ir) ir.style.display = paused ? 'block' : 'none';
-}
-function pauseRecording(){
-  if(!state.isRecording || state.isRecPaused || !state.mediaRecorder) return;
-  if(!supportsRecPause()){ showToast('Trình duyệt không hỗ trợ tạm dừng'); return; }
-  try{
-    state.mediaRecorder.pause();
-    state.isRecPaused = true;
-    stopRecTimerKeep(); // pause timer
-    cancelRecDraw();
-    updateRecPauseUI();
-    showToast('Đã tạm dừng');
-  }catch(e){
-    console.warn(e);
-    showToast('Không thể tạm dừng');
-  }
-}
-function resumeRecording(){
-  if(!state.isRecording || !state.isRecPaused || !state.mediaRecorder) return;
-  try{
-    state.mediaRecorder.resume();
-    state.isRecPaused = false;
-    resumeRecTimer();
-    // restart draw
-    const w = recCanvas.width, h = recCanvas.height;
-    const useRvfc = typeof video.requestVideoFrameCallback === 'function';
-    const drawLoop = () => {
-      if(!state.isRecording || state.isRecPaused) return;
-      drawToCanvas(recCtx,w,h);
-      if(useRvfc) state.recAnimId = video.requestVideoFrameCallback(drawLoop);
-      else state.recAnimId = requestAnimationFrame(drawLoop);
-    };
-    if(useRvfc) state.recAnimId = video.requestVideoFrameCallback(drawLoop);
-    else state.recAnimId = requestAnimationFrame(drawLoop);
-    updateRecPauseUI();
-    showToast('Tiếp tục quay');
-  }catch(e){
-    console.warn(e);
-    showToast('Không thể tiếp tục');
-  }
-}
-function stopRecTimerKeep(){
-  clearInterval(recInterval); recInterval = null;
-}
-function resumeRecTimer(){
-  if(recInterval) return;
-  recInterval = setInterval(()=>{
-    recSeconds++;
-    const h=String(Math.floor(recSeconds/3600)).padStart(2,'0');
-    const m=String(Math.floor((recSeconds%3600)/60)).padStart(2,'0');
-    const s=String(recSeconds%60).padStart(2,'0');
-    recTimerEl.textContent=`${h}:${m}:${s}`;
-  },1000);
-}
-if(recPauseBtn){
-  if(!supportsRecPause()) recPauseBtn.style.display = 'none';
-  recPauseBtn.addEventListener('click', e=>{
-    e.stopPropagation();
-    if(state.isRecPaused) resumeRecording();
-    else pauseRecording();
-  });
-}
 
 
 /* ===== Mic level meter (Web Audio) ===== */
@@ -1692,6 +1703,23 @@ function stopMicMeter(){
 }
 
 
+
+function resetAdjustmentsForQR(){
+  state.timerSec = 0;
+  state.ev = 0; state.sat = 1; state.temp = 0; state.filter = 'none';
+  document.querySelectorAll('.timer-opt').forEach(o=>o.classList.toggle('active', o.dataset.sec==='0'));
+  if(timerBtn) timerBtn.classList.remove('active');
+  document.querySelectorAll('.filter-item').forEach(x=>x.classList.remove('selected'));
+  const noneF = document.querySelector('.filter-item[data-filter="none"]');
+  if(noneF) noneF.classList.add('selected');
+  const evS = document.getElementById('ev-slider');
+  const satS = document.getElementById('sat-slider');
+  const tempS = document.getElementById('temp-slider');
+  if(evS) evS.value = 0;
+  if(satS) satS.value = 1;
+  if(tempS) tempS.value = 0;
+  applyFilters();
+}
 async function setMode(mode){
   if(state.isRecording){showToast('Hãy dừng quay video trước');return}
   if(mode === state.mode) return;
@@ -1704,7 +1732,7 @@ async function setMode(mode){
   document.querySelectorAll('.mode-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
   updateModePill();
   document.body.classList.toggle('mode-qr', mode==='qr');
-  if(mode==='qr') closeAllMenus();
+  if(mode==='qr'){ closeAllMenus(); resetAdjustmentsForQR(); }
 
   if(mode==='video'){
     shutter.classList.add('video-mode');
@@ -2063,6 +2091,26 @@ async function applyPreviewSettings(){
 }
 if(setPreviewRes) setPreviewRes.addEventListener('change', applyPreviewSettings);
 if(setPreviewFps) setPreviewFps.addEventListener('change', applyPreviewSettings);
+(function(){
+  const setPhotoFmt = document.getElementById('set-photo-fmt');
+  const setVideoFmt = document.getElementById('set-video-fmt');
+  try{
+    const pf = localStorage.getItem('webcam-photo-fmt');
+    const vf = localStorage.getItem('webcam-video-fmt');
+    if(pf) state.photoFmt = pf;
+    if(vf) state.videoFmt = vf;
+  }catch(e){}
+  if(setPhotoFmt) setPhotoFmt.addEventListener('change', ()=>{
+    state.photoFmt = setPhotoFmt.value || 'png';
+    try{ localStorage.setItem('webcam-photo-fmt', state.photoFmt); }catch(e){}
+    showToast('Đã áp dụng');
+  });
+  if(setVideoFmt) setVideoFmt.addEventListener('change', ()=>{
+    state.videoFmt = setVideoFmt.value || 'auto';
+    try{ localStorage.setItem('webcam-video-fmt', state.videoFmt); }catch(e){}
+    showToast('Đã áp dụng');
+  });
+})();
 
 const setFontEl = document.getElementById('set-font');
 if(setFontEl) setFontEl.addEventListener('change', ()=>{
@@ -2087,6 +2135,8 @@ if(btnFactory) btnFactory.addEventListener('click', ()=>{
   try{
     localStorage.removeItem('webcam-font');
     localStorage.removeItem('webcam-mic-gain');
+    localStorage.removeItem('webcam-photo-fmt');
+    localStorage.removeItem('webcam-video-fmt');
     sessionStorage.clear();
   }catch(e){}
   location.reload();
