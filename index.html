@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js" integrity="sha384-hStSInNIZ8ljtOVrmrgf7zdHMapaLBWoSnPTtF0nzsybp4+LuhDz6sHuEVpWIX8o" crossorigin="anonymous"></script>
   <style>
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
     html,body{width:100%;height:100%;overflow:hidden;background:#000;color:#fff;
@@ -79,10 +79,10 @@
       font-size:13px;z-index:15;display:none;white-space:nowrap;
     }
     #zoom-label{
-      position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
-      font-size:15px;font-weight:600;color:rgba(255,255,255,.55);
-      z-index:35;pointer-events:none;letter-spacing:.4px;
-      display:none;text-shadow:0 1px 4px rgba(0,0,0,.5);
+      position:fixed;bottom:28px;left:50%;transform:translateX(-50%);
+      font-size:12px;font-weight:500;color:rgba(255,255,255,.78);
+      z-index:35;pointer-events:none;letter-spacing:.3px;
+      display:none;text-shadow:0 1px 3px rgba(0,0,0,.45);
       transition:opacity .2s ease;
     }
 
@@ -244,8 +244,20 @@
       font-size:14px;font-weight:500;transition:background .15s;
     }
     .about-link:hover{background:rgba(255,255,255,.12)}
-    .about-link svg{width:22px;height:22px;flex-shrink:0}
+    .about-link svg{width:18px;height:18px;flex-shrink:0}
     .about-link.disabled{opacity:.45;pointer-events:none;cursor:default}
+    .switch{position:relative;display:inline-block;width:44px;height:26px;flex-shrink:0}
+    .switch input{opacity:0;width:0;height:0}
+    .switch-slider{
+      position:absolute;cursor:pointer;inset:0;border-radius:26px;
+      background:rgba(255,255,255,.2);transition:.2s;
+    }
+    .switch-slider:before{
+      position:absolute;content:"";height:20px;width:20px;left:3px;bottom:3px;
+      border-radius:50%;background:#fff;transition:.2s;
+    }
+    .switch input:checked + .switch-slider{background:#ffaa00}
+    .switch input:checked + .switch-slider:before{transform:translateX(18px)}
     .settings-row select{
       min-width:140px;padding:8px 12px;border-radius:10px;
       border:1px solid rgba(255,255,255,.15);
@@ -937,7 +949,7 @@
             <div style="font-size:18px;font-weight:600">web-cam-era</div>
             <div style="font-size:13px;color:rgba(255,255,255,.5)">Phiên bản 1.1.0</div>
             <div class="about-links">
-              <a class="about-link" href="https://binbimvn130.github.io/webs-cam-era/" target="_blank" rel="noopener noreferrer">
+              <a class="about-link" href="https://github.com/BinBimVN130/webs-cam-era" target="_blank" rel="noopener noreferrer">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.21 11.39.6.11.82-.26.82-.58 0-.29-.01-1.04-.02-2.05-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.33-1.76-1.33-1.76-1.09-.74.08-.73.08-.73 1.2.09 1.84 1.24 1.84 1.24 1.07 1.84 2.81 1.31 3.5 1 .11-.78.42-1.31.76-1.61-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.29-1.55 3.3-1.23 3.3-1.23.66 1.66.24 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.62-5.48 5.92.43.37.81 1.1.81 2.22 0 1.61-.01 2.9-.01 3.29 0 .32.22.7.83.58C20.57 21.8 24 17.3 24 12 24 5.37 18.63 0 12 0z"/></svg>
                 GitHub
               </a>
@@ -970,7 +982,17 @@
               <option value="vi">Tiếng Việt</option>
             </select>
           </div>
-          <div class="settings-row" style="border-bottom:none;padding-top:18px">
+          <div class="settings-row">
+            <div>
+              <div class="lab">Lưu lại các cài đặt</div>
+              <div class="hint">Lật, thiết bị, định dạng, độ phân giải, FPS, micro…</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="set-persist" checked>
+              <span class="switch-slider"></span>
+            </label>
+          </div>
+          <div class="settings-row" style="border-bottom:none;padding-top:8px">
             <div>
               <div class="lab">Khôi phục cài đặt gốc</div>
             </div>
@@ -1000,7 +1022,7 @@
 const state = {
   stream:null, mode:'photo', isRecording:false, mediaRecorder:null, recordedChunks:[],
   flipH:false, flipV:false, flashOn:false, flashColor:'#ffffff',
-  timerSec:0, isCounting:false, facingMode:'user', videoDeviceId:null, audioDeviceId:null, forceAspect:'16:9', previewRes:'1280x720', captureRes:'1280x720', previewFps:30, micGain:1, photoFmt:'png', videoFmt:'auto',
+  timerSec:0, isCounting:false, facingMode:'user', videoDeviceId:null, audioDeviceId:null, forceAspect:'16:9', previewRes:'1280x720', captureRes:'1280x720', previewFps:30, micGain:1, photoFmt:'png', videoFmt:'auto', persistSettings:true,
   recAnimId:null, qrScanning:false, qrAnimId:null,
   zoom:1, panX:0, panY:0, isPanning:false,
   panStartX:0, panStartY:0, panOriginX:0, panOriginY:0,
@@ -1212,6 +1234,50 @@ function savePhotoFromCanvas(cvs){
     }catch(e){ tryNext(i+1); }
   };
   tryNext(0);
+}
+
+
+const PERSIST_KEY = 'webcam-persist-v1';
+function loadPersistedSettings(){
+  try{
+    const flag = localStorage.getItem('webcam-persist-on');
+    if(flag === '0'){ state.persistSettings = false; return; }
+    state.persistSettings = true;
+    const raw = localStorage.getItem(PERSIST_KEY);
+    if(!raw) return;
+    const d = JSON.parse(raw);
+    if(d.flipH != null) state.flipH = !!d.flipH;
+    if(d.flipV != null) state.flipV = !!d.flipV;
+    if(d.videoDeviceId !== undefined) state.videoDeviceId = d.videoDeviceId || null;
+    if(d.audioDeviceId !== undefined) state.audioDeviceId = d.audioDeviceId || null;
+    if(d.photoFmt) state.photoFmt = d.photoFmt;
+    if(d.videoFmt) state.videoFmt = d.videoFmt;
+    if(d.previewRes) state.previewRes = d.previewRes;
+    if(d.previewFps != null) state.previewFps = d.previewFps;
+    if(d.micGain != null) state.micGain = d.micGain;
+    if(d.forceAspect) state.forceAspect = d.forceAspect;
+    if(d.font) applyFont(d.font);
+  }catch(e){}
+}
+function savePersistedSettings(){
+  if(!state.persistSettings) return;
+  try{
+    const d = {
+      flipH: state.flipH,
+      flipV: state.flipV,
+      videoDeviceId: state.videoDeviceId,
+      audioDeviceId: state.audioDeviceId,
+      photoFmt: state.photoFmt,
+      videoFmt: state.videoFmt,
+      previewRes: state.previewRes,
+      previewFps: state.previewFps,
+      micGain: state.micGain,
+      forceAspect: state.forceAspect,
+      font: document.documentElement.getAttribute('data-font') || 'system'
+    };
+    localStorage.setItem(PERSIST_KEY, JSON.stringify(d));
+    localStorage.setItem('webcam-persist-on', '1');
+  }catch(e){}
 }
 
 function downloadBlob(blob,name){
@@ -1883,6 +1949,7 @@ aspectBtn.addEventListener('click',()=>{
   state.forceAspect=order[i];
   aspectBtn.textContent=state.forceAspect;
   adjustAspectRatio();
+  savePersistedSettings();
 });
 
 // EV
@@ -1935,8 +2002,8 @@ document.getElementById('reset-btn').addEventListener('click', e => {
   showToast('Đã khôi phục mặc định');
 });
 
-flipVBtn.addEventListener('click',()=>{state.flipV=!state.flipV;applyVideoTransform()});
-flipHBtn.addEventListener('click',()=>{state.flipH=!state.flipH;applyVideoTransform()});
+flipVBtn.addEventListener('click',()=>{state.flipV=!state.flipV;applyVideoTransform();savePersistedSettings();});
+flipHBtn.addEventListener('click',()=>{state.flipH=!state.flipH;applyVideoTransform();savePersistedSettings();});
 
 // Fullscreen
 const fsBtn = document.getElementById('fs-btn');
@@ -2087,6 +2154,7 @@ async function applyPreviewSettings(){
   await startCamera(!!hadAudio && state.mode==='video');
   try{ await video.play(); }catch(e){}
   await waitForVideoFrame(1500);
+  savePersistedSettings();
   showToast('Đã áp dụng');
 }
 if(setPreviewRes) setPreviewRes.addEventListener('change', applyPreviewSettings);
@@ -2102,12 +2170,12 @@ if(setPreviewFps) setPreviewFps.addEventListener('change', applyPreviewSettings)
   }catch(e){}
   if(setPhotoFmt) setPhotoFmt.addEventListener('change', ()=>{
     state.photoFmt = setPhotoFmt.value || 'png';
-    try{ localStorage.setItem('webcam-photo-fmt', state.photoFmt); }catch(e){}
+    savePersistedSettings();
     showToast('Đã áp dụng');
   });
   if(setVideoFmt) setVideoFmt.addEventListener('change', ()=>{
     state.videoFmt = setVideoFmt.value || 'auto';
-    try{ localStorage.setItem('webcam-video-fmt', state.videoFmt); }catch(e){}
+    savePersistedSettings();
     showToast('Đã áp dụng');
   });
 })();
@@ -2115,6 +2183,7 @@ if(setPreviewFps) setPreviewFps.addEventListener('change', applyPreviewSettings)
 const setFontEl = document.getElementById('set-font');
 if(setFontEl) setFontEl.addEventListener('change', ()=>{
   applyFont(setFontEl.value);
+  savePersistedSettings();
   showToast(setFontEl.value === 'inter' ? 'Font: Inter' : 'Font: Hệ thống');
 });
 const setMicGain = document.getElementById('set-mic-gain');
@@ -2125,10 +2194,20 @@ if(setMicGain){
   }catch(e){}
   setMicGain.addEventListener('change', ()=>{
     state.micGain = parseFloat(setMicGain.value)||1;
-    try{ localStorage.setItem('webcam-mic-gain', String(state.micGain)); }catch(e){}
+    savePersistedSettings();
     showToast('Đã áp dụng');
   });
 }
+const setPersistEl = document.getElementById('set-persist');
+if(setPersistEl) setPersistEl.addEventListener('change', ()=>{
+  state.persistSettings = !!setPersistEl.checked;
+  try{
+    localStorage.setItem('webcam-persist-on', state.persistSettings ? '1' : '0');
+    if(state.persistSettings) savePersistedSettings();
+    else localStorage.removeItem(PERSIST_KEY);
+  }catch(e){}
+  showToast(state.persistSettings ? 'Đã bật lưu cài đặt' : 'Đã tắt lưu cài đặt');
+});
 const btnFactory = document.getElementById('btn-factory-reset');
 if(btnFactory) btnFactory.addEventListener('click', ()=>{
   if(!confirm('Khôi phục toàn bộ cài đặt về mặc định?')) return;
@@ -2137,6 +2216,8 @@ if(btnFactory) btnFactory.addEventListener('click', ()=>{
     localStorage.removeItem('webcam-mic-gain');
     localStorage.removeItem('webcam-photo-fmt');
     localStorage.removeItem('webcam-video-fmt');
+    localStorage.removeItem(PERSIST_KEY);
+    localStorage.removeItem('webcam-persist-on');
     sessionStorage.clear();
   }catch(e){}
   location.reload();
@@ -2269,12 +2350,22 @@ async function refreshDeviceLists(){
     const auds = list.filter(d=>d.kind==='audioinput');
     const curV = state.videoDeviceId || '';
     const curA = state.audioDeviceId || '';
-    vSel.innerHTML = '<option value="">Mặc định</option>' +
-      vids.map((d,i)=>`<option value="${d.deviceId}">${d.label || ('Camera '+(i+1))}</option>`).join('');
-    aSel.innerHTML = '<option value="">Mặc định</option>' +
-      auds.map((d,i)=>`<option value="${d.deviceId}">${d.label || ('Mic '+(i+1))}</option>`).join('');
-    vSel.value = curV;
-    aSel.value = curA;
+    const fillSelect = (sel, devices, prefix, cur) => {
+      sel.textContent = '';
+      const opt0 = document.createElement('option');
+      opt0.value = '';
+      opt0.textContent = 'Mặc định';
+      sel.appendChild(opt0);
+      devices.forEach((d,i) => {
+        const o = document.createElement('option');
+        o.value = d.deviceId || '';
+        o.textContent = d.label || (prefix + ' ' + (i+1));
+        sel.appendChild(o);
+      });
+      sel.value = cur;
+    };
+    fillSelect(vSel, vids, 'Camera', curV);
+    fillSelect(aSel, auds, 'Mic', curA);
   }catch(e){ console.warn(e); }
 }
 const setVideoDevice = document.getElementById('set-video-device');
@@ -2287,6 +2378,7 @@ if(setVideoDevice) setVideoDevice.addEventListener('change', async ()=>{
     state.stream=null; state._fpsRunning=false;
   }
   await startCamera(!!hadAudio && state.mode==='video');
+  savePersistedSettings();
   showToast('Đã áp dụng');
 });
 if(setAudioDevice) setAudioDevice.addEventListener('change', async ()=>{
@@ -2298,12 +2390,18 @@ if(setAudioDevice) setAudioDevice.addEventListener('change', async ()=>{
     }
     await startCamera(true);
   }
+  savePersistedSettings();
   showToast('Đã áp dụng');
 });
 
+loadPersistedSettings();
 updateModePill();
 window.addEventListener('resize', updateModePill);
-if(navigator.mediaDevices?.getUserMedia) startCamera(false);
+if(navigator.mediaDevices?.getUserMedia) startCamera(false).then(()=>{
+  applyVideoTransform();
+  if(aspectBtn) aspectBtn.textContent = state.forceAspect || '16:9';
+  adjustAspectRatio();
+});
 else{noCamera.classList.remove('hidden');showToast('Trình duyệt không hỗ trợ camera')}
 </script>
 </body>
