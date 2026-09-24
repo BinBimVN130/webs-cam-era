@@ -521,6 +521,19 @@
       height:100%;width:0%;border-radius:3px;
       background:#34c759;transition:width .06s linear,background-color .12s linear;
     }
+    
+    #rec-pause-btn{
+      display:none;width:40px;height:40px;border-radius:50%;border:none;
+      background:rgba(255,255,255,.12);color:#fff;cursor:pointer;
+      align-items:center;justify-content:center;
+      border:1px solid rgba(255,255,255,.15);
+      box-shadow:0 2px 8px rgba(0,0,0,.25);
+    }
+    #rec-pause-btn svg{width:18px;height:18px}
+    .recording-active #rec-pause-btn{display:flex}
+    .recording-active.no-rec-pause #rec-pause-btn{display:none !important}
+    #rec-pause-btn.paused{background:#ffaa00;color:#000;border-color:#ffaa00}
+
     .recording-active #shutter{visibility:visible !important;pointer-events:auto !important}
     .recording-active #mic-meter{display:flex !important;visibility:visible !important}
 
@@ -770,6 +783,10 @@
       </button>
     </div>
     <button id="shutter"></button>
+    <button type="button" id="rec-pause-btn" title="Tạm dừng" aria-label="Tạm dừng">
+      <svg class="icon-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+      <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M8 5v14l11-7z"/></svg>
+    </button>
     <button class="flip-btn" id="flip-v" title="Lật đứng">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M8 7l4-4 4 4M8 17l4 4 4-4"/></svg>
     </button>
@@ -946,7 +963,7 @@
 
 <script>
 const state = {
-  stream:null, mode:'photo', isRecording:false, mediaRecorder:null, recordedChunks:[],
+  stream:null, mode:'photo', isRecording:false, isRecPaused:false, mediaRecorder:null, recordedChunks:[],
   flipH:false, flipV:false, flashOn:false, flashColor:'#ffffff',
   timerSec:0, isCounting:false, facingMode:'user', videoDeviceId:null, audioDeviceId:null, forceAspect:'16:9', previewRes:'1280x720', captureRes:'1280x720', previewFps:30, micGain:1,
   recAnimId:null, qrScanning:false, qrAnimId:null,
@@ -1188,10 +1205,15 @@ async function startCamera(withAudio=false){
       width: { ideal: pw },
       height: { ideal: ph }
     };
+    // Chỉ dùng ideal (không min) để browser không hạ FPS ép
     if(pfps && pfps > 0){
-      videoConstraint.frameRate = { ideal: pfps, min: 15 };
+      videoConstraint.frameRate = { ideal: pfps };
     } else {
       videoConstraint.frameRate = { ideal: 60 };
+      videoConstraint.advanced = [
+        { frameRate: { ideal: 60 } },
+        { frameRate: { ideal: 30 } }
+      ];
     }
     if(state.videoDeviceId){
       videoConstraint.deviceId = { exact: state.videoDeviceId };
@@ -1201,22 +1223,35 @@ async function startCamera(withAudio=false){
     let audioConstraint = false;
     if(withAudio){
       audioConstraint = state.audioDeviceId
-        ? { deviceId: { exact: state.audioDeviceId } }
-        : true;
+        ? { deviceId: { exact: state.audioDeviceId }, echoCancellation: true, noiseSuppression: true }
+        : { echoCancellation: true, noiseSuppression: true };
     }
     state.stream = await navigator.mediaDevices.getUserMedia({
       video: videoConstraint,
       audio: audioConstraint
     });
+    // Ép FPS cao nhất cam cho phép (trong giới hạn setting)
+    try{
+      const vtrack = state.stream.getVideoTracks()[0];
+      const caps = vtrack.getCapabilities?.() || {};
+      const settings = vtrack.getSettings?.() || {};
+      if(caps.frameRate){
+        const maxF = caps.frameRate.max || 60;
+        const want = (pfps && pfps > 0) ? Math.min(pfps, maxF) : maxF;
+        if(!settings.frameRate || Math.abs(settings.frameRate - want) > 1){
+          await vtrack.applyConstraints({ frameRate: { ideal: want } });
+        }
+      }
+    }catch(e){ console.warn('apply fps', e); }
     video.srcObject = state.stream;
     video.muted = true;
+    video.playsInline = true;
     await new Promise(r=>{ if(video.readyState>=2) r(); else video.onloadedmetadata=()=>r(); });
     await video.play();
     noCamera.classList.add('hidden');
     requestAnimationFrame(()=>{ adjustAspectRatio(); setTimeout(adjustAspectRatio, 150); });
     startFpsCounter();
     if(state.mode === 'video') startMicMeter();
-    // Cập nhật danh sách thiết bị sau khi đã có quyền
     if(typeof refreshDeviceLists === 'function') refreshDeviceLists();
   }catch(e){
     console.error(e);
@@ -1382,13 +1417,30 @@ async function capturePhoto(){
   }
 }
 
+
+function cancelRecDraw(){
+  cancelRecDraw();
+  state.recAnimId = null;
+}
+
 async function startRecording(){
   if(!state.stream||state.isRecording||!video.videoWidth) return;
   const w=video.videoWidth,h=video.videoHeight;
   recCanvas.width=w;recCanvas.height=h;
-  const drawLoop=()=>{drawToCanvas(recCtx,w,h);state.recAnimId=requestAnimationFrame(drawLoop)};
-  drawLoop();
   const recFps = (state.previewFps > 0) ? state.previewFps : 30;
+  // Vẽ theo frame cam (rvfc) thay vì rAF 60Hz → nhẹ hơn, khớp FPS cam
+  const useRvfc = typeof video.requestVideoFrameCallback === 'function';
+  const drawLoop = () => {
+    if(!state.isRecording) return;
+    drawToCanvas(recCtx,w,h);
+    if(useRvfc){
+      state.recAnimId = video.requestVideoFrameCallback(drawLoop);
+    } else {
+      state.recAnimId = requestAnimationFrame(drawLoop);
+    }
+  };
+  if(useRvfc) state.recAnimId = video.requestVideoFrameCallback(drawLoop);
+  else state.recAnimId = requestAnimationFrame(drawLoop);
   const canvasStream=recCanvas.captureStream(recFps);
   const audioTracks=state.stream.getAudioTracks().filter(t=>t.readyState==='live');
   if(audioTracks.length){
@@ -1428,7 +1480,7 @@ async function startRecording(){
   for(const t of mimeCandidates){
     if(MediaRecorder.isTypeSupported(t)){ mime = t; break; }
   }
-  if(!mime){showToast('Trình duyệt không hỗ trợ quay video');cancelAnimationFrame(state.recAnimId);return}
+  if(!mime){showToast('Trình duyệt không hỗ trợ quay video');cancelRecDraw();return}
   // Bitrate động: theo độ phân giải × FPS (bits-per-pixel)
   // Công thức: w*h*fps*bpp — cân bằng nét và dung lượng
   const fps = Math.max(15, Math.min(60, recFps || 30));
@@ -1450,11 +1502,11 @@ async function startRecording(){
     });
   }catch(e){
     try{ state.mediaRecorder=new MediaRecorder(canvasStream,{mimeType:mime,videoBitsPerSecond:vBit}); }
-    catch(e2){ showToast('Không thể quay video');cancelAnimationFrame(state.recAnimId);return; }
+    catch(e2){ showToast('Không thể quay video');cancelRecDraw();return; }
   }
   state.mediaRecorder.ondataavailable=e=>{if(e.data?.size)state.recordedChunks.push(e.data)};
   state.mediaRecorder.onstop=()=>{
-    cancelAnimationFrame(state.recAnimId);
+    cancelRecDraw();
     // Đóng AudioContext sau khi recorder dừng (tránh mất tiếng)
     try{ state._recAudioCtx && state._recAudioCtx.close(); }catch(e){}
     state._recAudioCtx = null;
@@ -1466,18 +1518,26 @@ async function startRecording(){
     state.recordedChunks=[];
   };
   state.mediaRecorder.start(200);
-  state.isRecording=true;shutter.classList.add('recording');
+  state.isRecording=true;
+  state.isRecPaused=false;
+  shutter.classList.add('recording');
   recTimerEl.classList.add('recording');recTimerEl.style.display='block';startRecTimer();
   document.getElementById('app').classList.add('recording-active');
+  if(recPauseBtn){
+    document.getElementById('app').classList.toggle('no-rec-pause', !supportsRecPause());
+    updateRecPauseUI();
+  }
   closeAllMenus();
 }
 function stopRecording(){
   if(!state.isRecording||!state.mediaRecorder) return;
   try{ state.mediaRecorder.stop(); }catch(e){}
   state.isRecording=false;
+  state.isRecPaused=false;
   shutter.classList.remove('recording');
   recTimerEl.classList.remove('recording');recTimerEl.style.display='none';stopRecTimer();
   document.getElementById('app').classList.remove('recording-active');
+  if(recPauseBtn) updateRecPauseUI();
 }
 let recInterval=null,recSeconds=0;
 function startRecTimer(){
@@ -1491,6 +1551,82 @@ function startRecTimer(){
   },1000);
 }
 function stopRecTimer(){clearInterval(recInterval);recInterval=null}
+
+const recPauseBtn = document.getElementById('rec-pause-btn');
+function supportsRecPause(){
+  return !!(window.MediaRecorder && MediaRecorder.prototype.pause && MediaRecorder.prototype.resume);
+}
+function updateRecPauseUI(){
+  if(!recPauseBtn) return;
+  const paused = !!state.isRecPaused;
+  recPauseBtn.classList.toggle('paused', paused);
+  recPauseBtn.title = paused ? 'Tiếp tục' : 'Tạm dừng';
+  const ip = recPauseBtn.querySelector('.icon-pause');
+  const ir = recPauseBtn.querySelector('.icon-play');
+  if(ip) ip.style.display = paused ? 'none' : 'block';
+  if(ir) ir.style.display = paused ? 'block' : 'none';
+}
+function pauseRecording(){
+  if(!state.isRecording || state.isRecPaused || !state.mediaRecorder) return;
+  if(!supportsRecPause()){ showToast('Trình duyệt không hỗ trợ tạm dừng'); return; }
+  try{
+    state.mediaRecorder.pause();
+    state.isRecPaused = true;
+    stopRecTimerKeep(); // pause timer
+    cancelRecDraw();
+    updateRecPauseUI();
+    showToast('Đã tạm dừng');
+  }catch(e){
+    console.warn(e);
+    showToast('Không thể tạm dừng');
+  }
+}
+function resumeRecording(){
+  if(!state.isRecording || !state.isRecPaused || !state.mediaRecorder) return;
+  try{
+    state.mediaRecorder.resume();
+    state.isRecPaused = false;
+    resumeRecTimer();
+    // restart draw
+    const w = recCanvas.width, h = recCanvas.height;
+    const useRvfc = typeof video.requestVideoFrameCallback === 'function';
+    const drawLoop = () => {
+      if(!state.isRecording || state.isRecPaused) return;
+      drawToCanvas(recCtx,w,h);
+      if(useRvfc) state.recAnimId = video.requestVideoFrameCallback(drawLoop);
+      else state.recAnimId = requestAnimationFrame(drawLoop);
+    };
+    if(useRvfc) state.recAnimId = video.requestVideoFrameCallback(drawLoop);
+    else state.recAnimId = requestAnimationFrame(drawLoop);
+    updateRecPauseUI();
+    showToast('Tiếp tục quay');
+  }catch(e){
+    console.warn(e);
+    showToast('Không thể tiếp tục');
+  }
+}
+function stopRecTimerKeep(){
+  clearInterval(recInterval); recInterval = null;
+}
+function resumeRecTimer(){
+  if(recInterval) return;
+  recInterval = setInterval(()=>{
+    recSeconds++;
+    const h=String(Math.floor(recSeconds/3600)).padStart(2,'0');
+    const m=String(Math.floor((recSeconds%3600)/60)).padStart(2,'0');
+    const s=String(recSeconds%60).padStart(2,'0');
+    recTimerEl.textContent=`${h}:${m}:${s}`;
+  },1000);
+}
+if(recPauseBtn){
+  if(!supportsRecPause()) recPauseBtn.style.display = 'none';
+  recPauseBtn.addEventListener('click', e=>{
+    e.stopPropagation();
+    if(state.isRecPaused) resumeRecording();
+    else pauseRecording();
+  });
+}
+
 
 /* ===== Mic level meter (Web Audio) ===== */
 let micAudioCtx = null;
@@ -1539,14 +1675,14 @@ function startMicMeter(){
       if(smooth < 0.4) micBar.style.background = '#34c759';
       else if(smooth < 0.72) micBar.style.background = '#ff9500';
       else micBar.style.background = '#ff3b30';
-      micRaf = requestAnimationFrame(loop);
+      micRaf = setTimeout(loop, 66); // ~15Hz, đỡ tốn CPU
     };
-    micRaf = requestAnimationFrame(loop);
+    micRaf = setTimeout(loop, 66);
   }catch(e){ console.warn('Mic meter', e); }
 }
 
 function stopMicMeter(){
-  if(micRaf){ cancelAnimationFrame(micRaf); micRaf = null; }
+  if(micRaf){ clearTimeout(micRaf); try{cancelAnimationFrame(micRaf)}catch(e){}; micRaf = null; }
   try{ micSource && micSource.disconnect(); }catch(e){}
   try{ micAnalyser && micAnalyser.disconnect(); }catch(e){}
   try{ micAudioCtx && micAudioCtx.close(); }catch(e){}
