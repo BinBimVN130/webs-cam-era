@@ -79,8 +79,8 @@
       font-size:13px;z-index:15;display:none;white-space:nowrap;
     }
     #zoom-label{
-      position:fixed;bottom:28px;left:50%;transform:translateX(-50%);
-      font-size:12px;font-weight:500;color:rgba(255,255,255,.78);
+      position:fixed;bottom:10px;left:50%;transform:translateX(-50%);
+      font-size:12px;font-weight:500;color:rgba(255,255,255,.8);
       z-index:35;pointer-events:none;letter-spacing:.3px;
       display:none;text-shadow:0 1px 3px rgba(0,0,0,.45);
       transition:opacity .2s ease;
@@ -110,8 +110,8 @@
     }
     .zoom-slider{
       writing-mode:vertical-lr;direction:rtl;
-      width:5px;height:120px;-webkit-appearance:none;appearance:none;
-      background:rgba(255,255,255,.28);border-radius:3px;outline:none;
+      width:3px;height:120px;-webkit-appearance:none;appearance:none;
+      background:rgba(255,255,255,.28);border-radius:2px;outline:none;
     }
     .zoom-slider::-webkit-slider-thumb{
       -webkit-appearance:none;width:16px;height:16px;border-radius:50%;
@@ -424,6 +424,41 @@
     }
     body.mode-qr .left-divider{display:none !important}
 
+    
+    #loading-overlay{
+      display:none;position:fixed;inset:0;z-index:290;
+      background:rgba(0,0,0,.55);align-items:center;justify-content:center;
+      color:rgba(255,255,255,.9);font-size:15px;font-weight:500;
+    }
+    #loading-overlay.show{display:flex}
+    #perm-modal{
+      display:none;position:fixed;inset:0;z-index:300;
+      background:rgba(0,0,0,.6);align-items:center;justify-content:center;
+      padding:20px;
+    }
+    #perm-modal.show{display:flex}
+    .perm-box{
+      background:#1c1c1e;border:1px solid rgba(255,255,255,.12);
+      border-radius:16px;padding:28px 24px 20px;max-width:320px;width:100%;
+      text-align:center;box-shadow:0 16px 48px rgba(0,0,0,.5);
+    }
+    .perm-box p{font-size:15px;font-weight:500;margin-bottom:18px;line-height:1.4}
+    .perm-box button{
+      min-width:100px;padding:10px 20px;border:none;border-radius:12px;
+      background:#ffaa00;color:#000;font-size:14px;font-weight:600;cursor:pointer;
+    }
+    #mode-hint{
+      position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.92);
+      z-index:24;pointer-events:none;
+      font-size:22px;font-weight:600;color:#fff;
+      text-shadow:0 2px 12px rgba(0,0,0,.55);
+      opacity:0;transition:opacity .25s ease, transform .25s ease;
+      letter-spacing:.3px;white-space:nowrap;
+    }
+    #mode-hint.show{
+      opacity:1;transform:translate(-50%,-50%) scale(1);
+    }
+
     #toast{
       position:fixed;top:18px;left:50%;transform:translateX(-50%) translateY(-10px);
       background:rgba(30,30,32,.95);color:#fff;padding:12px 20px;border-radius:14px;
@@ -618,6 +653,7 @@
       <div id="countdown"></div>
       <div id="rec-timer">00:00:00</div>
       <div id="qr-hint">Đưa QR vào khung hình để bắt đầu quét</div>
+      <div id="mode-hint"></div>
       <div id="mic-meter">
         <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
           <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
@@ -864,11 +900,12 @@
               <div class="hint">Chỉ áp dụng khi quay video</div>
             </div>
             <select id="set-mic-gain">
-              <option value="1">1× (mặc định)</option>
-              <option value="1.5">1.5×</option>
+              <option value="1">Mặc định</option>
               <option value="2">2×</option>
               <option value="3">3×</option>
-              <option value="4">4×</option>
+              <option value="5">5×</option>
+              <option value="7">7×</option>
+              <option value="10">10×</option>
             </select>
           </div>
         </div>
@@ -1014,6 +1051,13 @@
   </div>
   <div id="fullscreen-flash"></div>
   <div id="zoom-label">1x</div>
+  <div id="loading-overlay">Đang tải...</div>
+  <div id="perm-modal">
+    <div class="perm-box">
+      <p>Vui lòng cấp quyền trình duyệt</p>
+      <button type="button" id="perm-ok">OK</button>
+    </div>
+  </div>
   <div id="toast"></div>
 </div>
 
@@ -1068,6 +1112,31 @@ const shutterFlash=document.getElementById('shutter-flash');
 const fullscreenFlash=document.getElementById('fullscreen-flash');
 const flipVBtn=document.getElementById('flip-v');
 const flipHBtn=document.getElementById('flip-h');
+
+
+function showModeHint(text){
+  const el = document.getElementById('mode-hint');
+  if(!el) return;
+  el.textContent = text;
+  el.classList.remove('show');
+  void el.offsetWidth;
+  el.classList.add('show');
+  clearTimeout(showModeHint._t);
+  showModeHint._t = setTimeout(()=> el.classList.remove('show'), 1200);
+}
+function showPermModal(){
+  const m = document.getElementById('perm-modal');
+  if(m) m.classList.add('show');
+}
+function hidePermModal(){
+  const m = document.getElementById('perm-modal');
+  if(m) m.classList.remove('show');
+}
+document.getElementById('perm-ok')?.addEventListener('click', ()=>{
+  hidePermModal();
+  // Thử xin quyền lại
+  if(navigator.mediaDevices?.getUserMedia) startCamera(state.mode==='video');
+});
 
 function showToast(msg,ms=2500){
   toast.textContent=msg;toast.classList.add('show');
@@ -1143,13 +1212,14 @@ function applyFilters(){
   const sat = state.sat;
   let filter = `brightness(${br}) saturate(${sat})`;
   if(state.temp > 0.02){
-    /* Ấm: sepia cam */
-    const t = state.temp;
-    filter += ` sepia(${t*0.5}) saturate(${1+t*0.35}) brightness(${1+t*0.02})`;
+    /* Ấm: tỷ lệ theo thanh kéo */
+    const t = state.temp; // 0..1
+    filter += ` sepia(${t*0.45}) saturate(${1+t*0.3}) brightness(${1+t*0.02})`;
   }else if(state.temp < -0.02){
-    /* Lạnh: xanh dịu, không tím (sepia + hue ~190) */
-    const t = Math.abs(state.temp);
-    filter += ` sepia(${t*0.35}) hue-rotate(${190 + t*15}deg) saturate(${1+t*0.45}) brightness(${1+t*0.04})`;
+    /* Lạnh: tăng dần theo |t|, không nhảy full xanh */
+    const t = Math.abs(state.temp); // 0..1
+    // hue cố định vùng xanh lạnh nhẹ; cường độ = sepia * t + saturate nhẹ
+    filter += ` sepia(${t*0.22}) hue-rotate(185deg) saturate(${1+t*0.25}) brightness(${1+t*0.03})`;
   }
   filter += filterCssExtra();
   video.style.filter = filter;
@@ -1333,15 +1403,8 @@ async function startCamera(withAudio=false){
       state._fpsRunning = false;
     }
 
-    if(!sessionStorage.getItem('permTipShown')){
-      sessionStorage.setItem('permTipShown','1');
-      showToast('Trình duyệt cần cấp quyền Camera và Micro');
-      await new Promise(r=>setTimeout(r, 500));
-    } else if(withAudio && !sessionStorage.getItem('permMicTipShown')){
-      sessionStorage.setItem('permMicTipShown','1');
-      showToast('Trình duyệt cần cấp quyền Micro để quay video có tiếng');
-      await new Promise(r=>setTimeout(r, 400));
-    }
+    const loadingEl = document.getElementById('loading-overlay');
+    if(loadingEl) loadingEl.classList.add('show');
 
     const [pw, ph] = (state.previewRes || '1280x720').split('x').map(Number);
     const pfps = (state.previewFps === 0 || state.previewFps) ? state.previewFps : 30;
@@ -1393,17 +1456,18 @@ async function startCamera(withAudio=false){
     await new Promise(r=>{ if(video.readyState>=2) r(); else video.onloadedmetadata=()=>r(); });
     await video.play();
     noCamera.classList.add('hidden');
+    const loadingEl2 = document.getElementById('loading-overlay');
+    if(loadingEl2) loadingEl2.classList.remove('show');
     requestAnimationFrame(()=>{ adjustAspectRatio(); setTimeout(adjustAspectRatio, 150); });
     startFpsCounter();
     if(state.mode === 'video') startMicMeter();
     if(typeof refreshDeviceLists === 'function') refreshDeviceLists();
   }catch(e){
     console.error(e);
+    const loadingEl3 = document.getElementById('loading-overlay');
+    if(loadingEl3) loadingEl3.classList.remove('show');
     noCamera.classList.remove('hidden');
-    const msg = (e && e.name === 'NotAllowedError')
-      ? 'Hãy cấp quyền Camera' + (withAudio ? ' và Micro' : '') + ' trong trình duyệt'
-      : 'Không thể truy cập camera.';
-    showToast(msg);
+    showPermModal();
   }
 }
 
@@ -1613,7 +1677,7 @@ async function startRecording(){
   const canvasStream=recCanvas.captureStream(recFps);
   const audioTracks=state.stream.getAudioTracks().filter(t=>t.readyState==='live');
   if(audioTracks.length){
-    const gainVal = Math.min(4, Math.max(0.5, parseFloat(state.micGain) || 1));
+    const gainVal = Math.min(10, Math.max(0.5, parseFloat(state.micGain) || 1));
     try{
       const actx = new (window.AudioContext || window.webkitAudioContext)();
       if(actx.state === 'suspended') await actx.resume();
@@ -1858,7 +1922,7 @@ async function setMode(mode){
   }
   updateShutterColor();
   const modeNames={photo:'Chụp ảnh',video:'Quay Video',qr:'Quét QR'};
-  if(modeNames[mode]) showToast(modeNames[mode]);
+  if(modeNames[mode]) showModeHint(modeNames[mode]);
   requestAnimationFrame(() => {
     setTimeout(() => cameraFrame.classList.remove('mode-switching'), 80);
   });
@@ -2187,7 +2251,7 @@ async function applyPreviewSettings(){
   try{ await video.play(); }catch(e){}
   await waitForVideoFrame(1500);
   savePersistedSettings();
-  showToast('Đã áp dụng');
+  
 }
 if(setPreviewRes) setPreviewRes.addEventListener('change', applyPreviewSettings);
 if(setPreviewFps) setPreviewFps.addEventListener('change', applyPreviewSettings);
@@ -2203,12 +2267,12 @@ if(setPreviewFps) setPreviewFps.addEventListener('change', applyPreviewSettings)
   if(setPhotoFmt) setPhotoFmt.addEventListener('change', ()=>{
     state.photoFmt = setPhotoFmt.value || 'png';
     savePersistedSettings();
-    showToast('Đã áp dụng');
+    
   });
   if(setVideoFmt) setVideoFmt.addEventListener('change', ()=>{
     state.videoFmt = setVideoFmt.value || 'webm';
     savePersistedSettings();
-    showToast('Đã áp dụng');
+    
   });
 })();
 
@@ -2216,7 +2280,7 @@ const setFontEl = document.getElementById('set-font');
 if(setFontEl) setFontEl.addEventListener('change', ()=>{
   applyFont(setFontEl.value);
   savePersistedSettings();
-  showToast(setFontEl.value === 'inter' ? 'Font: Inter' : 'Font: Hệ thống');
+  
 });
 const setMicGain = document.getElementById('set-mic-gain');
 if(setMicGain){
@@ -2227,7 +2291,7 @@ if(setMicGain){
   setMicGain.addEventListener('change', ()=>{
     state.micGain = parseFloat(setMicGain.value)||1;
     savePersistedSettings();
-    showToast('Đã áp dụng');
+    
   });
 }
 const setPersistEl = document.getElementById('set-persist');
@@ -2238,7 +2302,7 @@ if(setPersistEl) setPersistEl.addEventListener('change', ()=>{
     if(state.persistSettings) savePersistedSettings();
     else localStorage.removeItem(PERSIST_KEY);
   }catch(e){}
-  showToast(state.persistSettings ? 'Đã bật lưu cài đặt' : 'Đã tắt lưu cài đặt');
+  
 });
 const btnFactory = document.getElementById('btn-factory-reset');
 if(btnFactory) btnFactory.addEventListener('click', ()=>{
@@ -2411,7 +2475,7 @@ if(setVideoDevice) setVideoDevice.addEventListener('change', async ()=>{
   }
   await startCamera(!!hadAudio && state.mode==='video');
   savePersistedSettings();
-  showToast('Đã áp dụng');
+  
 });
 if(setAudioDevice) setAudioDevice.addEventListener('change', async ()=>{
   state.audioDeviceId = setAudioDevice.value || null;
@@ -2423,7 +2487,7 @@ if(setAudioDevice) setAudioDevice.addEventListener('change', async ()=>{
     await startCamera(true);
   }
   savePersistedSettings();
-  showToast('Đã áp dụng');
+  
 });
 
 loadPersistedSettings();
@@ -2434,7 +2498,7 @@ if(navigator.mediaDevices?.getUserMedia) startCamera(false).then(()=>{
   if(aspectBtn) aspectBtn.textContent = state.forceAspect || '16:9';
   adjustAspectRatio();
 });
-else{noCamera.classList.remove('hidden');showToast('Trình duyệt không hỗ trợ camera')}
+else{noCamera.classList.remove('hidden');const le=document.getElementById('loading-overlay');if(le)le.classList.remove('show');showPermModal();}
 </script>
 </body>
 </html>
